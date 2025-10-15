@@ -2,7 +2,7 @@
 
 client_id = "b83f71fae506fd71b7f2c2b880d2402f"
 name = "multi-location-analytics"
-application_url = "https://shopify.curetshop.com"
+application_url = "http://147.93.177.156:4000"
 embedded = true
 
 [build]
@@ -25,4 +25,4 @@ api_version = "2026-01"
 scopes = "read_products,read_inventory,read_locations,read_orders,read_analytics,read_metaobjects,write_metaobjects"
 
 [auth]
-redirect_urls = [ "https://shopify.curetshop.com/api/auth" ]
+redirect_urls = [ "http://147.93.177.156:4000/api/auth" ]
