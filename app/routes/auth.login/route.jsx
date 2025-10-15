@@ -32,7 +32,7 @@ export default function Auth() {
             <s-text-field
               name="shop"
               label="Shop domain"
-              details="example.myshopify.com"
+              placeholder="mi-tienda.myshopify.com"
               value={shop}
               onChange={(e) => setShop(e.currentTarget.value)}
               autocomplete="on"
