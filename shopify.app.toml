@@ -25,4 +25,4 @@ api_version = "2026-01"
 scopes = "read_products,read_inventory,read_locations,read_orders,read_analytics,read_metaobjects,write_metaobjects"
 
 [auth]
-redirect_urls = [ "https://shopify.curetshop.com/api/auth" ]
+redirect_urls = [ "https://shopify.curetshop.com/auth/callback" ]
