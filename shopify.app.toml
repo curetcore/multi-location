@@ -21,7 +21,7 @@ api_version = "2026-01"
 
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
-scopes = "read_products,read_inventory,read_locations,read_orders,read_analytics,read_metaobjects,write_metaobjects"
+scopes = "read_products,read_inventory,read_locations,read_orders,read_analytics,read_metaobjects,write_metaobjects,read_customers,read_fulfillments"
 
 [auth]
 redirect_urls = [ "https://shopify.curetshop.com/auth/callback" ]
