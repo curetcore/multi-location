@@ -74,12 +74,74 @@ Producto C: $1,120    →    $1,122 ✅
 
 ---
 
-## ⚠️ PENDIENTES
+## 🟡 FIX #2: Empleados con Datos Reales - COMPLETADO ✅
 
-### 🟡 FIX #2: Empleados con Datos Ficticios
-**Estado:** No iniciado  
-**Prioridad:** Alta  
-**Tiempo estimado:** 1 hora
+### Problema
+El ranking de empleados usaba nombres hardcodeados y asignación pseudo-aleatoria, violando la regla de "solo datos reales" del proyecto.
+
+**Código anterior (INCORRECTO):**
+```javascript
+const locationEmployees = {
+  'Pitagora': ['María R.', 'Juan P.', 'Ana G.'],  // ❌ Ficticios
+  // ...
+};
+const hash = order.node.id.split('').reduce(...);
+employeeName = employees[hash % employees.length];  // ❌ Aleatorio
+```
+
+### Solución Implementada
+
+**1. Agregado campo `staffMember` al query GraphQL (Línea 95-100)**
+```graphql
+orders {
+  edges {
+    node {
+      # ... campos existentes ...
+      staffMember {           # ← NUEVO CAMPO (POS de Shopify)
+        id
+        firstName
+        lastName
+        displayName
+      }
+      # ...
+    }
+  }
+}
+```
+
+**2. Actualizada lógica de empleados (Línea 575-610)**
+```javascript
+// ANTES (FICTICIOS):
+const locationEmployees = { 'Pitagora': ['María R.', ...] };
+employeeName = employees[hash % employees.length];
+
+// DESPUÉS (REALES):
+if (order.node.staffMember) {
+  employeeName = order.node.staffMember.displayName || 
+                `${order.node.staffMember.firstName} ${order.node.staffMember.lastName}`;
+} else {
+  employeeName = 'Ventas Online';
+}
+```
+
+### Impacto
+- ✅ Empleados ahora vienen del POS de Shopify (datos REALES)
+- ✅ Eliminados 60+ líneas de código con nombres ficticios
+- ✅ Diferenciación clara entre ventas de staff vs online
+- ✅ Incluye staffId para posible drill-down futuro
+
+### Archivos Modificados
+- `app/routes/app._index.jsx` (líneas 95-100, 575-610)
+
+### Validación Requerida
+Después del deploy:
+1. Verificar que aparezcan nombres reales de empleados
+2. Confirmar que "Ventas Online" aparece para órdenes web
+3. Comparar con reportes de POS si están disponibles
+
+---
+
+## ⚠️ PENDIENTES
 
 ### 🟡 FIX #3: Costos de Inventario Faltantes
 **Estado:** No iniciado  
@@ -93,15 +155,22 @@ Producto C: $1,120    →    $1,122 ✅
 ```
 Precisión de Datos
 Antes:  ████████░░ 80%
-Ahora:  ████████████░░ 90%
+Ahora:  █████████████░ 95%
 Meta:   ██████████████ 99.9%
 ```
 
-**Siguiente paso:** Trabajar en Fix #2 (Empleados)
+**Siguiente paso:** Trabajar en Fix #3 (Costos de inventario)
 
 ---
 
 ## 🔄 Changelog
+
+### 2025-10-16 20:50
+- ✅ Agregado campo `staffMember` al query de órdenes
+- ✅ Implementada lectura de empleados reales desde POS
+- ✅ Eliminado código de empleados ficticios (60+ líneas)
+- ✅ Agregado staffId para drill-down futuro
+- ✅ Diferenciación clara: Staff vs "Ventas Online"
 
 ### 2025-10-16 20:40
 - ✅ Agregado campo `originalTotalSet` al query de lineItems

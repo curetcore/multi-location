@@ -92,6 +92,12 @@ export const loader = async ({ request }) => {
                   id
                   name
                 }
+                staffMember {
+                  id
+                  firstName
+                  lastName
+                  displayName
+                }
                 lineItems(first: 50) {
                   edges {
                     node {
@@ -572,44 +578,23 @@ export const loader = async ({ request }) => {
         sku: product.sku || productSkuMap[product.title] || ''
       }));
     
-    // Procesar datos de empleados desde las notas de las órdenes
+    // Procesar datos de empleados REALES desde POS de Shopify
     const employeeMetrics = {};
-    console.log(`Processing ${currentPeriodOrders.length} orders for employee metrics`);
     
     currentPeriodOrders.forEach(order => {
-      // Buscar nombre del empleado en las notas o tags
-      let employeeName = 'Vendedor Web'; // Default para ventas online
+      // Obtener el empleado REAL del campo staffMember (POS de Shopify)
+      let employeeName = null;
       
-      // Si tiene ubicación física, asignar un empleado genérico por ubicación
-      if (order.node.physicalLocation) {
-        const locationName = order.node.physicalLocation.name;
-        console.log(`Order location: ${locationName}`);
-        
-        // Asignar empleados por tienda basado en patrones consistentes
-        // Actualiza estos nombres para que coincidan con tus tiendas reales
-        const locationEmployees = {
-          'Pitagora': ['María R.', 'Juan P.', 'Ana G.'],
-          'Curetshop Pitagora': ['Carlos L.', 'Sofia M.'],
-          'Curetshop Buen Precio': ['Luis H.', 'Carmen D.'],
-          'Curetshop Hermanas Mirabal': ['Pedro S.', 'Laura V.'],
-          'Curetshop Puro Ahorro': ['Miguel A.', 'Rosa T.'],
-          'Curetshop Villa del Centro': ['Diego F.', 'Patricia B.'],
-          'Buen Precio': ['Luis H.', 'Carmen D.'],
-          'Hermanas Mirabal': ['Pedro S.', 'Laura V.'],
-          'Puro Ahorro': ['Miguel A.', 'Rosa T.'],
-          'Villa del Centro': ['Diego F.', 'Patricia B.']
-        };
-        
-        // Si no encuentra la tienda, usar empleados genéricos
-        const employees = locationEmployees[locationName] || [
-          `${locationName} - Vendedor 1`,
-          `${locationName} - Vendedor 2`,
-          `${locationName} - Vendedor 3`
-        ];
-        
-        // Usar hash del ID de orden para asignar consistentemente
-        const hash = order.node.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-        employeeName = employees[hash % employees.length];
+      // Prioridad 1: staffMember de POS
+      if (order.node.staffMember) {
+        employeeName = order.node.staffMember.displayName || 
+                      `${order.node.staffMember.firstName} ${order.node.staffMember.lastName}`.trim() ||
+                      'Staff Sin Nombre';
+      }
+      
+      // Si no hay staffMember, es venta online
+      if (!employeeName) {
+        employeeName = 'Ventas Online';
       }
       
       const amount = parseFloat(order.node.currentTotalPriceSet?.shopMoney?.amount || 0);
@@ -621,7 +606,8 @@ export const loader = async ({ request }) => {
           totalSales: 0,
           orders: 0,
           productsCount: 0,
-          locations: new Set()
+          locations: new Set(),
+          staffId: order.node.staffMember?.id || null
         };
       }
       
