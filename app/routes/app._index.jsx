@@ -13,23 +13,6 @@ export const loader = async ({ request }) => {
           shop {
             name
             currencyCode
-            primaryDomain {
-              url
-            }
-            brand {
-              logo {
-                image {
-                  url
-                  altText
-                }
-              }
-              squareLogo {
-                image {
-                  url
-                  altText
-                }
-              }
-            }
           }
         }
       `
@@ -37,14 +20,6 @@ export const loader = async ({ request }) => {
     
     const shopData = await shopResponse.json();
     const shop = shopData.data?.shop;
-    
-    // Obtener logo de la marca si está disponible
-    let shopLogo = null;
-    if (shop?.brand?.logo?.image?.url) {
-      shopLogo = shop.brand.logo.image.url;
-    } else if (shop?.brand?.squareLogo?.image?.url) {
-      shopLogo = shop.brand.squareLogo.image.url;
-    }
     
     // 2. Obtener todas las ubicaciones
     const locationsResponse = await admin.graphql(
@@ -192,7 +167,6 @@ export const loader = async ({ request }) => {
     
     return {
       shop,
-      shopLogo,
       locations,
       metrics: {
         totalSales: Math.round(totalSales),
@@ -211,7 +185,6 @@ export const loader = async ({ request }) => {
     console.error("Error loading dashboard data:", error);
     return {
       shop: null,
-      shopLogo: null,
       locations: [],
       metrics: {
         totalSales: 0,
@@ -229,7 +202,7 @@ export const loader = async ({ request }) => {
 };
 
 export default function DashboardNuevo() {
-  const { shop, shopLogo, locations, metrics, lastUpdate } = useLoaderData();
+  const { shop, locations, metrics, lastUpdate } = useLoaderData();
   const navigate = useNavigate();
   
   // Estado para el período seleccionado
@@ -250,47 +223,15 @@ export default function DashboardNuevo() {
         <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '0 30px' }}>
           {/* Título principal */}
           <div style={{ marginBottom: '30px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '15px' }}>
-              {shopLogo ? (
-                <img 
-                  src={shopLogo} 
-                  alt={shop?.name || 'Logo'} 
-                  style={{
-                    height: '50px',
-                    width: 'auto',
-                    maxWidth: '200px',
-                    objectFit: 'contain',
-                    background: 'white',
-                    padding: '8px',
-                    borderRadius: '8px'
-                  }}
-                />
-              ) : (
-                <div style={{
-                  height: '50px',
-                  width: '50px',
-                  background: 'rgba(255,255,255,0.9)',
-                  borderRadius: '8px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '24px',
-                  fontWeight: '700',
-                  color: '#1e293b'
-                }}>
-                  {shop?.name?.charAt(0).toUpperCase() || 'S'}
-                </div>
-              )}
-              <h1 style={{ 
-                color: 'white', 
-                fontSize: '42px', 
-                fontWeight: '700',
-                margin: '0',
-                letterSpacing: '-1px'
-              }}>
-                Dashboard Analítico
-              </h1>
-            </div>
+            <h1 style={{ 
+              color: 'white', 
+              fontSize: '42px', 
+              fontWeight: '700',
+              margin: '0 0 10px 0',
+              letterSpacing: '-1px'
+            }}>
+              Dashboard Analítico
+            </h1>
             <p style={{ 
               color: 'rgba(255,255,255,0.9)', 
               fontSize: '18px',
