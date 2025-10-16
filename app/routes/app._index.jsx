@@ -792,7 +792,7 @@ export default function DashboardNuevo() {
                       background: '#fafafa',
                       minWidth: '150px'
                     }}>
-                      Total
+                      Cant. / Inversión
                     </th>
                     {locations.slice(0, 8).map(location => (
                       <th key={location.node.id} style={{
