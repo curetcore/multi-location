@@ -5,6 +5,18 @@ import { useState, useEffect } from "react";
 export const loader = async ({ request }) => {
   const { admin } = await authenticate.admin(request);
   
+  // Obtener el período de la URL
+  const url = new URL(request.url);
+  const period = url.searchParams.get('period') || '30d';
+  
+  // Calcular días según el período
+  const daysMap = {
+    '7d': 7,
+    '30d': 30,
+    '90d': 90
+  };
+  const days = daysMap[period] || 30;
+  
   try {
     // 1. Obtener información básica de la tienda
     const shopResponse = await admin.graphql(
@@ -146,13 +158,13 @@ export const loader = async ({ request }) => {
       }
     });
     
-    // Calcular métricas del período actual (últimos 30 días)
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    // Calcular métricas del período actual según el período seleccionado
+    const periodStartDate = new Date();
+    periodStartDate.setDate(periodStartDate.getDate() - days);
     
     const currentPeriodOrders = orders.filter(order => {
       const orderDate = new Date(order.node.createdAt);
-      return orderDate >= thirtyDaysAgo;
+      return orderDate >= periodStartDate;
     });
     
     const totalSales = currentPeriodOrders.reduce((sum, order) => {
@@ -162,13 +174,13 @@ export const loader = async ({ request }) => {
     const totalOrders = currentPeriodOrders.length;
     const avgTicket = totalOrders > 0 ? totalSales / totalOrders : 0;
     
-    // Calcular métricas del período anterior (60-30 días atrás)
-    const sixtyDaysAgo = new Date();
-    sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
+    // Calcular métricas del período anterior (mismo número de días)
+    const previousPeriodStart = new Date();
+    previousPeriodStart.setDate(previousPeriodStart.getDate() - (days * 2));
     
     const previousPeriodOrders = orders.filter(order => {
       const orderDate = new Date(order.node.createdAt);
-      return orderDate >= sixtyDaysAgo && orderDate < thirtyDaysAgo;
+      return orderDate >= previousPeriodStart && orderDate < periodStartDate;
     });
     
     const previousSales = previousPeriodOrders.reduce((sum, order) => {
@@ -220,6 +232,7 @@ export const loader = async ({ request }) => {
         avgTicket: Math.round(todayAvgTicket),
         topLocation: topLocation
       },
+      currentPeriod: period,
       lastUpdate: new Date().toISOString()
     };
     
@@ -244,14 +257,16 @@ export const loader = async ({ request }) => {
         avgTicket: 0,
         topLocation: { name: 'Sin datos', sales: 0 }
       },
+      currentPeriod: '30d',
       lastUpdate: new Date().toISOString()
     };
   }
 };
 
 export default function DashboardNuevo() {
-  const { shop, locations, metrics, todayMetrics, lastUpdate } = useLoaderData();
+  const { shop, locations, metrics, todayMetrics, currentPeriod, lastUpdate } = useLoaderData();
   const navigate = useNavigate();
+  const [selectedPeriod, setSelectedPeriod] = useState(currentPeriod || '30d');
   
   // Calcular sucursales activas
   const activeLocations = locations.filter(loc => loc.node.isActive).length;
@@ -331,14 +346,40 @@ export default function DashboardNuevo() {
       <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '30px' }}>
         {/* KPIs PRINCIPALES */}
         <div style={{ marginBottom: '30px' }}>
-          <h2 style={{ 
-            fontSize: '24px', 
-            fontWeight: '600', 
-            marginBottom: '20px',
-            color: '#1a1a1a'
-          }}>
-            Métricas Clave
-          </h2>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+            <h2 style={{ 
+              fontSize: '24px', 
+              fontWeight: '600', 
+              margin: 0,
+              color: '#1a1a1a'
+            }}>
+              Métricas Clave
+            </h2>
+            <select 
+              style={{
+                background: 'white',
+                color: '#1e293b',
+                border: '1px solid #e5e7eb',
+                padding: '8px 16px',
+                borderRadius: '8px',
+                fontSize: '14px',
+                cursor: 'pointer',
+                fontWeight: '500'
+              }}
+              value={selectedPeriod}
+              onChange={(e) => {
+                setSelectedPeriod(e.target.value);
+                // Recargar la página con el nuevo período
+                const url = new URL(window.location);
+                url.searchParams.set('period', e.target.value);
+                window.location.href = url.toString();
+              }}
+            >
+              <option value="7d">Últimos 7 días</option>
+              <option value="30d">Últimos 30 días</option>
+              <option value="90d">Últimos 90 días</option>
+            </select>
+          </div>
           
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px' }}>
             {/* KPI: Ventas del Período */}
