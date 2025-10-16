@@ -832,7 +832,7 @@ export default function DashboardNuevo() {
                           color: '#111827',
                           marginBottom: '2px'
                         }}>
-                          {product.totalQuantity.toLocaleString()} u.
+                          {product.totalQuantity.toLocaleString()}
                         </div>
                         <div style={{ 
                           fontSize: '12px', 
@@ -912,7 +912,7 @@ export default function DashboardNuevo() {
                         color: '#111827',
                         marginBottom: '2px'
                       }}>
-                        {productsList?.reduce((sum, p) => sum + p.totalQuantity, 0).toLocaleString() || '0'} u.
+                        {productsList?.reduce((sum, p) => sum + p.totalQuantity, 0).toLocaleString() || '0'}
                       </div>
                       <div style={{ 
                         fontSize: '12px', 
