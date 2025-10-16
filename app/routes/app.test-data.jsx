@@ -1,5 +1,5 @@
-import { json } from "@remix-run/node";
-import { useLoaderData } from "react-router";
+import { json } from "@shopify/remix-oxygen";
+import { useLoaderData } from "@remix-run/react";
 import { authenticate } from "../shopify.server";
 
 export const loader = async ({ request }) => {
