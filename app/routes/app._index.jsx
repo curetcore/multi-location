@@ -359,10 +359,15 @@ export const loader = async ({ request }) => {
     let totalInventory = 0;
     const inventoryByLocation = {};
     let totalInventoryValue = 0;
+    let hasEstimatedInventoryCost = false;
     
     products.forEach(product => {
       product.node.variants.edges.forEach(variant => {
         const price = parseFloat(variant.node.price || 0);
+        const unitCost = variant.node.inventoryItem?.unitCost?.amount 
+          ? parseFloat(variant.node.inventoryItem.unitCost.amount) 
+          : null;
+        
         variant.node.inventoryItem?.inventoryLevels?.edges?.forEach(level => {
           const availableQty = level.node.quantities?.find(q => q.name === 'available');
           const locationId = level.node.location?.id;
@@ -370,8 +375,17 @@ export const loader = async ({ request }) => {
           
           if (availableQty && availableQty.quantity > 0) {
             const quantity = availableQty.quantity;
+            
+            // Usar costo real si existe, sino estimar 40% del precio
+            const estimatedCost = unitCost || (price * 0.40);
+            const inventoryValue = quantity * estimatedCost;
+            
+            if (!unitCost) {
+              hasEstimatedInventoryCost = true;
+            }
+            
             totalInventory += quantity;
-            totalInventoryValue += quantity * price;
+            totalInventoryValue += inventoryValue;
             
             if (!inventoryByLocation[locationId]) {
               inventoryByLocation[locationId] = {
@@ -383,7 +397,7 @@ export const loader = async ({ request }) => {
             }
             
             inventoryByLocation[locationId].quantity += quantity;
-            inventoryByLocation[locationId].value += quantity * price;
+            inventoryByLocation[locationId].value += inventoryValue;
           }
         });
       });
@@ -412,7 +426,9 @@ export const loader = async ({ request }) => {
       
       product.node.variants.edges.forEach(variant => {
         const price = parseFloat(variant.node.price || 0);
-        const unitCost = variant.node.inventoryItem?.unitCost?.amount ? parseFloat(variant.node.inventoryItem.unitCost.amount) : null;
+        const unitCost = variant.node.inventoryItem?.unitCost?.amount 
+          ? parseFloat(variant.node.inventoryItem.unitCost.amount) 
+          : null;
         const sku = variant.node.sku || '';
         
         // Guardar el SKU del primer variante con inventario
@@ -428,9 +444,20 @@ export const loader = async ({ request }) => {
           if (availableQty && availableQty.quantity > 0) {
             const quantity = availableQty.quantity;
             
+            // Calcular inversión: usar costo real si existe, sino estimar 40% del precio
+            // (margen típico retail 60% = costo 40%)
+            const estimatedCost = unitCost || (price * 0.40);
+            const investment = quantity * estimatedCost;
+            const isCostEstimated = !unitCost;
+            
             // Actualizar totales del producto
             productTableData[productId].totalQuantity += quantity;
-            productTableData[productId].totalInvestment += unitCost ? quantity * unitCost : 0;
+            productTableData[productId].totalInvestment += investment;
+            
+            // Marcar si algún costo fue estimado
+            if (isCostEstimated) {
+              productTableData[productId].hasEstimatedCost = true;
+            }
             
             // Actualizar datos por ubicación
             if (!productTableData[productId].locationData[locationId]) {
@@ -443,7 +470,7 @@ export const loader = async ({ request }) => {
             }
             
             productTableData[productId].locationData[locationId].quantity += quantity;
-            productTableData[productId].locationData[locationId].investment += unitCost ? quantity * unitCost : 0;
+            productTableData[productId].locationData[locationId].investment += investment;
           }
         });
       });
@@ -656,11 +683,13 @@ export const loader = async ({ request }) => {
       ordersLoaded: orders.length,
       productsLoaded: products.length,
       loadTime: ((endTime - startTime) / 1000).toFixed(2),
+      hasEstimatedInventoryCost, // Flag para mostrar advertencia en UI
       metrics: {
         totalSales: Math.round(totalSales),
         totalOrders,
         avgTicket: Math.round(avgTicket),
         totalInventory,
+        totalInventoryValue: Math.round(totalInventoryValue), // Agregado
         salesChange: Math.round(salesChange * 10) / 10,
         ordersChange: Math.round(ordersChange * 10) / 10,
         avgTicketChange: Math.round(avgTicketChange * 10) / 10,
