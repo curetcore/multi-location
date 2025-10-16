@@ -808,7 +808,7 @@ export default function DashboardNuevo() {
                               color: '#111827',
                               marginBottom: '2px'
                             }}>
-                              {product.sku}
+                              {product.sku.substring(0, 4).toUpperCase()}
                             </div>
                           )}
                           <div style={{ 
