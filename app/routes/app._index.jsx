@@ -377,9 +377,11 @@ export default function DashboardNuevo() {
               fontSize: '24px', 
               fontWeight: '600', 
               margin: 0,
-              color: '#1a1a1a'
+              color: '#1a1a1a',
+              textTransform: 'uppercase',
+              letterSpacing: '1px'
             }}>
-              Métricas Clave
+              MÉTRICAS CLAVE
             </h2>
             <select 
               style={{
@@ -670,9 +672,11 @@ export default function DashboardNuevo() {
             fontSize: '24px', 
             fontWeight: '600', 
             marginBottom: '20px',
-            color: '#1a1a1a'
+            color: '#1a1a1a',
+            textTransform: 'uppercase',
+            letterSpacing: '1px'
           }}>
-            Valor de Inventario por Sucursal
+            VALOR DE INVENTARIO POR SUCURSAL
           </h2>
           
           <div style={{ 
@@ -728,8 +732,8 @@ export default function DashboardNuevo() {
                       flexShrink: 0
                     }}>
                       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M12 2L2 7V12C2 16.55 4.84 20.74 9 22.05V19.94C5.91 18.57 4 15.04 4 12V8.18L12 4.44L20 8.18V12C20 12.19 19.99 12.37 19.98 12.56C20.64 12.98 21.21 13.55 21.63 14.21C21.86 13.53 22 12.79 22 12V7L12 2Z" fill="#475569"/>
-                        <path d="M18 15C16.89 15 16 15.89 16 17V22H18V20H20V22H22V17C22 15.89 21.11 15 20 15H18Z" fill="#475569"/>
+                        <path d="M5 20V10L12 3L19 10V20H15V13H9V20H5Z" fill="#475569"/>
+                        <path d="M10 20V15H14V20H10Z" fill="#475569"/>
                       </svg>
                     </div>
                   </div>
