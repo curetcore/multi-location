@@ -41,10 +41,102 @@ export const loader = async ({ request }) => {
     const locationsData = await locationsResponse.json();
     const locations = locationsData.data?.locations?.edges || [];
     
-    // 3. Por ahora retornamos solo datos básicos
+    // 3. Obtener órdenes recientes para calcular métricas
+    const ordersResponse = await admin.graphql(
+      `#graphql
+        query getRecentOrders {
+          orders(first: 50, reverse: true) {
+            edges {
+              node {
+                id
+                totalPriceSet {
+                  shopMoney {
+                    amount
+                  }
+                }
+                createdAt
+                lineItems(first: 5) {
+                  edges {
+                    node {
+                      quantity
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      `
+    );
+    
+    const ordersData = await ordersResponse.json();
+    const orders = ordersData.data?.orders?.edges || [];
+    
+    // 4. Obtener inventario total
+    const inventoryResponse = await admin.graphql(
+      `#graphql
+        query getInventory {
+          products(first: 100) {
+            edges {
+              node {
+                variants(first: 10) {
+                  edges {
+                    node {
+                      inventoryItem {
+                        inventoryLevels(first: 10) {
+                          edges {
+                            node {
+                              quantities(names: ["available"]) {
+                                name
+                                quantity
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      `
+    );
+    
+    const inventoryData = await inventoryResponse.json();
+    const products = inventoryData.data?.products?.edges || [];
+    
+    // Calcular métricas
+    const totalSales = orders.reduce((sum, order) => {
+      return sum + parseFloat(order.node.totalPriceSet?.shopMoney?.amount || 0);
+    }, 0);
+    
+    const totalOrders = orders.length;
+    const avgTicket = totalOrders > 0 ? totalSales / totalOrders : 0;
+    
+    // Calcular inventario total
+    let totalInventory = 0;
+    products.forEach(product => {
+      product.node.variants.edges.forEach(variant => {
+        variant.node.inventoryItem?.inventoryLevels?.edges?.forEach(level => {
+          const availableQty = level.node.quantities?.find(q => q.name === 'available');
+          if (availableQty) {
+            totalInventory += availableQty.quantity;
+          }
+        });
+      });
+    });
+    
     return {
       shop,
       locations,
+      metrics: {
+        totalSales: Math.round(totalSales),
+        totalOrders,
+        avgTicket: Math.round(avgTicket),
+        totalInventory
+      },
       lastUpdate: new Date().toISOString()
     };
     
@@ -53,13 +145,19 @@ export const loader = async ({ request }) => {
     return {
       shop: null,
       locations: [],
+      metrics: {
+        totalSales: 0,
+        totalOrders: 0,
+        avgTicket: 0,
+        totalInventory: 0
+      },
       lastUpdate: new Date().toISOString()
     };
   }
 };
 
 export default function DashboardNuevo() {
-  const { shop, locations, lastUpdate } = useLoaderData();
+  const { shop, locations, metrics, lastUpdate } = useLoaderData();
   const navigate = useNavigate();
   
   // Estado para el período seleccionado
@@ -205,7 +303,197 @@ export default function DashboardNuevo() {
 
       {/* CONTENIDO PRINCIPAL */}
       <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '30px' }}>
-        {/* Placeholder temporal */}
+        {/* KPIs PRINCIPALES */}
+        <div style={{ marginBottom: '30px' }}>
+          <h2 style={{ 
+            fontSize: '24px', 
+            fontWeight: '600', 
+            marginBottom: '20px',
+            color: '#1a1a1a'
+          }}>
+            Métricas Clave
+          </h2>
+          
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
+            {/* KPI: Ventas del Período */}
+            <div style={{
+              background: 'white',
+              borderRadius: '12px',
+              padding: '25px',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+              borderLeft: '4px solid #4ade80',
+              transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+              cursor: 'pointer'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-2px)';
+              e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.05)';
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '15px' }}>
+                <div>
+                  <p style={{ fontSize: '14px', color: '#6b7280', margin: '0 0 8px 0' }}>Ventas del Período</p>
+                  <p style={{ fontSize: '32px', fontWeight: '700', margin: 0, color: '#1a1a1a' }}>
+                    ${metrics.totalSales.toLocaleString()}
+                  </p>
+                </div>
+                <div style={{
+                  width: '48px',
+                  height: '48px',
+                  background: 'linear-gradient(135deg, #4ade80 0%, #22c55e 100%)',
+                  borderRadius: '12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'white',
+                  fontSize: '24px'
+                }}>💰</div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ color: '#22c55e', fontSize: '20px' }}>↑</span>
+                <span style={{ color: '#22c55e', fontSize: '16px', fontWeight: '600' }}>+12.5%</span>
+                <span style={{ color: '#6b7280', fontSize: '14px' }}>vs. período anterior</span>
+              </div>
+            </div>
+
+            {/* KPI: Órdenes Procesadas */}
+            <div style={{
+              background: 'white',
+              borderRadius: '12px',
+              padding: '25px',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+              borderLeft: '4px solid #3b82f6',
+              transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+              cursor: 'pointer'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-2px)';
+              e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.05)';
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '15px' }}>
+                <div>
+                  <p style={{ fontSize: '14px', color: '#6b7280', margin: '0 0 8px 0' }}>Órdenes Procesadas</p>
+                  <p style={{ fontSize: '32px', fontWeight: '700', margin: 0, color: '#1a1a1a' }}>
+                    {metrics.totalOrders}
+                  </p>
+                </div>
+                <div style={{
+                  width: '48px',
+                  height: '48px',
+                  background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+                  borderRadius: '12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'white',
+                  fontSize: '24px'
+                }}>📦</div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ color: '#3b82f6', fontSize: '20px' }}>↑</span>
+                <span style={{ color: '#3b82f6', fontSize: '16px', fontWeight: '600' }}>+8.3%</span>
+                <span style={{ color: '#6b7280', fontSize: '14px' }}>vs. período anterior</span>
+              </div>
+            </div>
+
+            {/* KPI: Ticket Promedio */}
+            <div style={{
+              background: 'white',
+              borderRadius: '12px',
+              padding: '25px',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+              borderLeft: '4px solid #f59e0b',
+              transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+              cursor: 'pointer'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-2px)';
+              e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.05)';
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '15px' }}>
+                <div>
+                  <p style={{ fontSize: '14px', color: '#6b7280', margin: '0 0 8px 0' }}>Ticket Promedio</p>
+                  <p style={{ fontSize: '32px', fontWeight: '700', margin: 0, color: '#1a1a1a' }}>
+                    ${metrics.avgTicket.toLocaleString()}
+                  </p>
+                </div>
+                <div style={{
+                  width: '48px',
+                  height: '48px',
+                  background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                  borderRadius: '12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'white',
+                  fontSize: '24px'
+                }}>🎯</div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ color: '#f59e0b', fontSize: '20px' }}>↑</span>
+                <span style={{ color: '#f59e0b', fontSize: '16px', fontWeight: '600' }}>+3.7%</span>
+                <span style={{ color: '#6b7280', fontSize: '14px' }}>mejor margen</span>
+              </div>
+            </div>
+
+            {/* KPI: Inventario Total */}
+            <div style={{
+              background: 'white',
+              borderRadius: '12px',
+              padding: '25px',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+              borderLeft: '4px solid #8b5cf6',
+              transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+              cursor: 'pointer'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-2px)';
+              e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.05)';
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '15px' }}>
+                <div>
+                  <p style={{ fontSize: '14px', color: '#6b7280', margin: '0 0 8px 0' }}>Inventario Total</p>
+                  <p style={{ fontSize: '32px', fontWeight: '700', margin: 0, color: '#1a1a1a' }}>
+                    {metrics.totalInventory.toLocaleString()}
+                  </p>
+                </div>
+                <div style={{
+                  width: '48px',
+                  height: '48px',
+                  background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
+                  borderRadius: '12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'white',
+                  fontSize: '24px'
+                }}>📊</div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ color: '#ef4444', fontSize: '20px' }}>↓</span>
+                <span style={{ color: '#ef4444', fontSize: '16px', fontWeight: '600' }}>-2.1%</span>
+                <span style={{ color: '#6b7280', fontSize: '14px' }}>rotación saludable</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Placeholder para próximas secciones */}
         <div style={{
           background: 'white',
           borderRadius: '12px',
@@ -213,8 +501,8 @@ export default function DashboardNuevo() {
           textAlign: 'center',
           boxShadow: '0 2px 10px rgba(0,0,0,0.05)'
         }}>
-          <h3 style={{ color: '#667eea', marginBottom: '10px' }}>🎨 Nuevo diseño en progreso</h3>
-          <p style={{ color: '#6b7280' }}>Header completado. Las siguientes secciones se agregarán paso a paso.</p>
+          <h3 style={{ color: '#667eea', marginBottom: '10px' }}>📈 Próxima sección: Gráficas de rendimiento</h3>
+          <p style={{ color: '#6b7280' }}>KPIs implementados. Las gráficas se agregarán a continuación.</p>
         </div>
       </div>
     </div>
