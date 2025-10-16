@@ -68,16 +68,28 @@ export const loader = async ({ request }) => {
                     currencyCode
                   }
                 }
+                currentTotalPriceSet {
+                  shopMoney {
+                    amount
+                    currencyCode
+                  }
+                }
                 createdAt
                 displayFinancialStatus
                 physicalLocation {
                   id
                   name
                 }
-                lineItems(first: 5) {
+                lineItems(first: 50) {
                   edges {
                     node {
+                      title
                       quantity
+                      variant {
+                        product {
+                          title
+                        }
+                      }
                     }
                   }
                 }
@@ -298,10 +310,83 @@ export const loader = async ({ request }) => {
     // Convertir a array y filtrar productos sin inventario
     const productsList = Object.values(productTableData).filter(p => p.totalQuantity > 0);
     
+    // Procesar métricas por sucursal
+    const locationMetrics = {};
+    
+    // Inicializar métricas para cada ubicación
+    locations.forEach(location => {
+      const locationId = location.node.id;
+      locationMetrics[locationId] = {
+        id: locationId,
+        name: location.node.name,
+        sales: 0,
+        orders: 0,
+        avgTicket: 0,
+        unitsSold: 0,
+        topProducts: {},
+        inventoryValue: inventoryByLocation[locationId]?.value || 0
+      };
+    });
+    
+    // Procesar órdenes para calcular métricas por ubicación
+    currentPeriodOrders.forEach(order => {
+      const locationId = order.node.physicalLocation?.id;
+      const locationName = order.node.physicalLocation?.name || 'Online';
+      
+      if (locationId && locationMetrics[locationId]) {
+        const orderAmount = parseFloat(order.node.currentTotalPriceSet?.shopMoney?.amount || 0);
+        locationMetrics[locationId].sales += orderAmount;
+        locationMetrics[locationId].orders += 1;
+        
+        // Procesar items de la orden
+        order.node.lineItems?.edges?.forEach(item => {
+          const quantity = item.node.quantity || 0;
+          const productTitle = item.node.title || 'Sin nombre';
+          
+          locationMetrics[locationId].unitsSold += quantity;
+          
+          // Track top products
+          if (!locationMetrics[locationId].topProducts[productTitle]) {
+            locationMetrics[locationId].topProducts[productTitle] = 0;
+          }
+          locationMetrics[locationId].topProducts[productTitle] += quantity;
+        });
+      }
+    });
+    
+    // Calcular ticket promedio y encontrar top producto para cada ubicación
+    Object.values(locationMetrics).forEach(location => {
+      location.avgTicket = location.orders > 0 ? Math.round(location.sales / location.orders) : 0;
+      
+      // Encontrar el producto más vendido
+      let topProduct = { name: 'Sin ventas', quantity: 0 };
+      Object.entries(location.topProducts).forEach(([product, quantity]) => {
+        if (quantity > topProduct.quantity) {
+          topProduct = { name: product, quantity };
+        }
+      });
+      location.topProduct = topProduct;
+      
+      // Eliminar el objeto topProducts ya que no lo necesitamos en el frontend
+      delete location.topProducts;
+    });
+    
+    // Calcular el promedio general para comparación
+    const totalLocationSales = Object.values(locationMetrics).reduce((sum, loc) => sum + loc.sales, 0);
+    const avgSalesPerLocation = locations.length > 0 ? totalLocationSales / locations.length : 0;
+    
+    // Agregar porcentaje de rendimiento vs promedio
+    Object.values(locationMetrics).forEach(location => {
+      location.performanceVsAvg = avgSalesPerLocation > 0 
+        ? Math.round(((location.sales - avgSalesPerLocation) / avgSalesPerLocation) * 100)
+        : 0;
+    });
+    
     return {
       shop,
       locations,
       productsList,
+      locationMetrics: Object.values(locationMetrics),
       metrics: {
         totalSales: Math.round(totalSales),
         totalOrders,
@@ -352,7 +437,7 @@ export const loader = async ({ request }) => {
 };
 
 export default function DashboardNuevo() {
-  const { shop, locations, metrics, todayMetrics, inventoryByLocation, currentPeriod, lastUpdate, productsList } = useLoaderData();
+  const { shop, locations, metrics, todayMetrics, inventoryByLocation, currentPeriod, lastUpdate, productsList, locationMetrics } = useLoaderData();
   const navigate = useNavigate();
   const [selectedPeriod, setSelectedPeriod] = useState(currentPeriod || '30d');
   
@@ -1028,6 +1113,197 @@ export default function DashboardNuevo() {
                 </tbody>
               </table>
             </div>
+          </div>
+        </div>
+
+        {/* MÉTRICAS CLAVE POR SUCURSAL */}
+        <div style={{ marginBottom: '30px' }}>
+          <h2 style={{ 
+            fontSize: '16px', 
+            fontWeight: '600', 
+            marginBottom: '20px',
+            color: '#1a1a1a',
+            textTransform: 'uppercase',
+            letterSpacing: '1px'
+          }}>
+            MÉTRICAS CLAVE POR SUCURSAL
+          </h2>
+          
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: `repeat(auto-fit, minmax(300px, 1fr))`,
+            gap: '16px'
+          }}>
+            {locationMetrics && locationMetrics.slice(0, 8).map((location, index) => {
+              // Determinar si es la sucursal líder
+              const isTopLocation = Math.max(...locationMetrics.map(l => l.sales)) === location.sales && location.sales > 0;
+              const performanceColor = location.performanceVsAvg > 10 ? '#16a34a' : 
+                                     location.performanceVsAvg < -10 ? '#dc2626' : '#6b7280';
+              
+              return (
+                <div 
+                  key={location.id}
+                  style={{
+                    background: 'white',
+                    borderRadius: '12px',
+                    padding: '20px',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+                    position: 'relative',
+                    transition: 'all 0.2s ease',
+                    cursor: 'pointer',
+                    border: isTopLocation ? '2px solid #334155' : 'none'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.05)';
+                  }}
+                >
+                  {/* Badge de líder */}
+                  {isTopLocation && (
+                    <div style={{
+                      position: 'absolute',
+                      top: '-12px',
+                      right: '20px',
+                      background: '#334155',
+                      color: 'white',
+                      padding: '4px 12px',
+                      borderRadius: '12px',
+                      fontSize: '12px',
+                      fontWeight: '600'
+                    }}>
+                      LÍDER
+                    </div>
+                  )}
+                  
+                  {/* Header con nombre e icono */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '16px' }}>
+                    <h3 style={{ 
+                      fontSize: '16px', 
+                      fontWeight: '600', 
+                      margin: 0,
+                      color: '#1a1a1a'
+                    }}>
+                      {location.name}
+                    </h3>
+                    <div style={{
+                      width: '40px',
+                      height: '40px',
+                      background: '#f3f4f6',
+                      borderRadius: '10px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0
+                    }}>
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M5 20V10L12 3L19 10V20H15V13H9V20H5Z" fill="#475569"/>
+                        <path d="M10 20V15H14V20H10Z" fill="#475569"/>
+                      </svg>
+                    </div>
+                  </div>
+                  
+                  {/* Métricas principales */}
+                  <div style={{ marginBottom: '16px' }}>
+                    <div style={{ marginBottom: '12px' }}>
+                      <p style={{ fontSize: '12px', color: '#6b7280', margin: '0 0 4px 0' }}>VENTAS</p>
+                      <p style={{ fontSize: '24px', fontWeight: '700', margin: 0, color: '#1a1a1a' }}>
+                        ${Math.round(location.sales).toLocaleString()}
+                      </p>
+                    </div>
+                    
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+                      <div>
+                        <p style={{ fontSize: '12px', color: '#6b7280', margin: '0 0 4px 0' }}>ÓRDENES</p>
+                        <p style={{ fontSize: '18px', fontWeight: '600', margin: 0, color: '#334155' }}>
+                          {location.orders}
+                        </p>
+                      </div>
+                      <div>
+                        <p style={{ fontSize: '12px', color: '#6b7280', margin: '0 0 4px 0' }}>TICKET PROM.</p>
+                        <p style={{ fontSize: '18px', fontWeight: '600', margin: 0, color: '#334155' }}>
+                          ${location.avgTicket}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                      <div>
+                        <p style={{ fontSize: '12px', color: '#6b7280', margin: '0 0 4px 0' }}>UNIDADES</p>
+                        <p style={{ fontSize: '18px', fontWeight: '600', margin: 0, color: '#334155' }}>
+                          {location.unitsSold}
+                        </p>
+                      </div>
+                      <div>
+                        <p style={{ fontSize: '12px', color: '#6b7280', margin: '0 0 4px 0' }}>VS PROMEDIO</p>
+                        <p style={{ fontSize: '18px', fontWeight: '600', margin: 0, color: performanceColor }}>
+                          {location.performanceVsAvg > 0 ? '+' : ''}{location.performanceVsAvg}%
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Barra de progreso de contribución */}
+                  <div style={{ marginBottom: '12px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                      <p style={{ fontSize: '12px', color: '#6b7280', margin: 0 }}>Contribución al total</p>
+                      <p style={{ fontSize: '12px', color: '#6b7280', margin: 0 }}>
+                        {metrics.totalSales > 0 ? Math.round((location.sales / metrics.totalSales) * 100) : 0}%
+                      </p>
+                    </div>
+                    <div style={{
+                      width: '100%',
+                      height: '6px',
+                      background: '#f3f4f6',
+                      borderRadius: '3px',
+                      overflow: 'hidden'
+                    }}>
+                      <div style={{
+                        width: `${metrics.totalSales > 0 ? Math.round((location.sales / metrics.totalSales) * 100) : 0}%`,
+                        height: '100%',
+                        background: '#334155',
+                        transition: 'width 0.3s ease'
+                      }} />
+                    </div>
+                  </div>
+                  
+                  {/* Top producto */}
+                  <div style={{
+                    background: '#f8f9fa',
+                    borderRadius: '8px',
+                    padding: '12px',
+                    marginTop: '16px'
+                  }}>
+                    <p style={{ fontSize: '11px', color: '#6b7280', margin: '0 0 4px 0', textTransform: 'uppercase' }}>
+                      Producto más vendido
+                    </p>
+                    <p style={{ fontSize: '13px', fontWeight: '500', margin: 0, color: '#1a1a1a' }}>
+                      {location.topProduct.name}
+                    </p>
+                    <p style={{ fontSize: '12px', color: '#6b7280', margin: 0 }}>
+                      {location.topProduct.quantity} unidades
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
+            
+            {(!locationMetrics || locationMetrics.length === 0) && (
+              <div style={{
+                gridColumn: '1 / -1',
+                background: '#f7f7f7',
+                borderRadius: '12px',
+                padding: '40px',
+                textAlign: 'center'
+              }}>
+                <p style={{ color: '#6b7280', margin: 0 }}>
+                  No hay datos de ventas para el período seleccionado
+                </p>
+              </div>
+            )}
           </div>
         </div>
 
