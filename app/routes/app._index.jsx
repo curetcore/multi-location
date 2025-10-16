@@ -689,22 +689,16 @@ export default function DashboardNuevo() {
               const locationQuantity = isRealData ? item.quantity : Math.round(metrics.totalInventory / locations.length);
               const locationValue = isRealData ? Math.round(item.value) : locationQuantity * 85;
               
-              // Colores para cada sucursal - paleta más suave
-              const colors = ['#1e293b', '#475569', '#64748b', '#94a3b8', '#334155', '#475569', '#64748b', '#94a3b8'];
-              const bgColor = colors[index % colors.length];
-              
               return (
                 <div 
                   key={isRealData ? item.id : locationData.id}
                   style={{
                     background: 'white',
                     borderRadius: '12px',
-                    padding: '20px',
+                    padding: '25px',
                     boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
-                    border: '1px solid #e5e7eb',
-                    position: 'relative',
-                    overflow: 'hidden',
-                    transition: 'transform 0.2s ease',
+                    border: 'none',
+                    transition: 'transform 0.2s ease, box-shadow 0.2s ease',
                     cursor: 'pointer'
                   }}
                   onMouseEnter={(e) => {
@@ -716,75 +710,37 @@ export default function DashboardNuevo() {
                     e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.05)';
                   }}
                 >
-                  {/* Barra de color superior */}
-                  <div style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    height: '4px',
-                    background: bgColor
-                  }} />
-                  
-                  {/* Ícono de sucursal */}
-                  <div style={{
-                    width: '40px',
-                    height: '40px',
-                    background: `linear-gradient(135deg, ${bgColor}20 0%, ${bgColor}10 100%)`,
-                    borderRadius: '10px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    marginBottom: '12px'
-                  }}>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M12 2L2 7V12C2 16.55 4.84 20.74 9 22.05V19.94C5.91 18.57 4 15.04 4 12V8.18L12 4.44L20 8.18V12C20 12.19 19.99 12.37 19.98 12.56C20.64 12.98 21.21 13.55 21.63 14.21C21.86 13.53 22 12.79 22 12V7L12 2Z" fill={bgColor}/>
-                      <path d="M18 15C16.89 15 16 15.89 16 17V22H18V20H20V22H22V17C22 15.89 21.11 15 20 15H18Z" fill={bgColor}/>
-                    </svg>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '15px' }}>
+                    <div style={{ width: '100%' }}>
+                      <p style={{ fontSize: '14px', color: '#6b7280', margin: '0 0 8px 0' }}>{locationName}</p>
+                      <p style={{ fontSize: '32px', fontWeight: '700', margin: 0, color: '#1a1a1a' }}>
+                        ${locationValue.toLocaleString()}
+                      </p>
+                    </div>
+                    <div style={{
+                      width: '48px',
+                      height: '48px',
+                      background: '#f3f4f6',
+                      borderRadius: '12px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0
+                    }}>
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2L2 7V12C2 16.55 4.84 20.74 9 22.05V19.94C5.91 18.57 4 15.04 4 12V8.18L12 4.44L20 8.18V12C20 12.19 19.99 12.37 19.98 12.56C20.64 12.98 21.21 13.55 21.63 14.21C21.86 13.53 22 12.79 22 12V7L12 2Z" fill="#475569"/>
+                        <path d="M18 15C16.89 15 16 15.89 16 17V22H18V20H20V22H22V17C22 15.89 21.11 15 20 15H18Z" fill="#475569"/>
+                      </svg>
+                    </div>
                   </div>
-                  
-                  {/* Nombre de sucursal */}
-                  <h3 style={{
-                    fontSize: '16px',
-                    fontWeight: '600',
-                    color: '#1a1a1a',
-                    margin: '0 0 4px 0',
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis'
-                  }}>
-                    {locationName}
-                  </h3>
-                  
-                  {/* Cantidad de productos */}
-                  <p style={{
-                    fontSize: '14px',
-                    color: '#6b7280',
-                    margin: '0 0 12px 0'
-                  }}>
-                    {locationQuantity.toLocaleString()} productos
-                  </p>
-                  
-                  {/* Valor estimado */}
-                  <p style={{
-                    fontSize: '20px',
-                    fontWeight: '700',
-                    color: bgColor,
-                    margin: 0
-                  }}>
-                    ${locationValue.toLocaleString()}
-                  </p>
-                  
-                  {/* Estado */}
-                  <div style={{
-                    position: 'absolute',
-                    top: '12px',
-                    right: '12px',
-                    width: '8px',
-                    height: '8px',
-                    borderRadius: '50%',
-                    background: (isRealData || locationData.isActive) ? '#10b981' : '#ef4444'
-                  }} />
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span style={{ color: '#6b7280', fontSize: '14px' }}>
+                      {locationQuantity.toLocaleString()} productos
+                    </span>
+                    {(isRealData || locationData.isActive) && (
+                      <span style={{ color: '#10b981', fontSize: '14px' }}>• Activa</span>
+                    )}
+                  </div>
                 </div>
               );
             })}
