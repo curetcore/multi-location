@@ -851,29 +851,32 @@ export default function DashboardNuevo() {
                   <tr style={{
                     position: 'sticky',
                     bottom: 0,
-                    borderTop: '2px solid #e5e7eb',
-                    background: '#1e293b',
-                    fontWeight: '600',
-                    color: 'white'
+                    borderTop: '3px solid #e5e7eb',
+                    background: 'linear-gradient(to right, #f8f9fa 0%, #f3f4f6 100%)',
+                    fontWeight: '700',
+                    color: '#1e293b'
                   }}>
                     <td style={{
                       padding: '16px',
-                      color: 'white',
+                      color: '#1e293b',
                       position: 'sticky',
                       left: 0,
-                      background: '#1e293b'
+                      background: '#f8f9fa',
+                      fontSize: '14px',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px'
                     }}>
                       TOTALES
                     </td>
                     <td style={{
                       padding: '16px',
                       textAlign: 'right',
-                      color: 'white'
+                      color: '#1e293b'
                     }}>
-                      <div>
+                      <div style={{ fontSize: '18px', fontWeight: '700' }}>
                         {productsList?.reduce((sum, p) => sum + p.totalQuantity, 0).toLocaleString() || '0'}
                       </div>
-                      <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.8)' }}>
+                      <div style={{ fontSize: '14px', color: '#6b7280', fontWeight: '600' }}>
                         ${productsList?.reduce((sum, p) => sum + Math.round(p.totalInvestment), 0).toLocaleString() || '0'}
                       </div>
                     </td>
@@ -891,11 +894,11 @@ export default function DashboardNuevo() {
                         <td key={location.node.id} style={{
                           padding: '16px',
                           textAlign: 'center',
-                          color: 'white',
-                          borderLeft: '1px solid rgba(255,255,255,0.2)'
+                          color: '#1e293b',
+                          borderLeft: '1px solid #e5e7eb'
                         }}>
-                          <div>{locationTotal.toLocaleString()}</div>
-                          <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.8)' }}>
+                          <div style={{ fontSize: '16px', fontWeight: '700' }}>{locationTotal.toLocaleString()}</div>
+                          <div style={{ fontSize: '13px', color: '#6b7280', fontWeight: '600' }}>
                             ${locationInvestment.toLocaleString()}
                           </div>
                         </td>
@@ -904,6 +907,38 @@ export default function DashboardNuevo() {
                   </tr>
                 </tbody>
               </table>
+            </div>
+          </div>
+        </div>
+
+        {/* DIVISOR MODERNO */}
+        <div style={{ 
+          margin: '50px 0',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}>
+          <div style={{
+            height: '1px',
+            background: 'linear-gradient(90deg, transparent 0%, #e5e7eb 20%, #e5e7eb 80%, transparent 100%)',
+            width: '100%',
+            position: 'relative'
+          }}>
+            <div style={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              background: '#f8f9fa',
+              padding: '0 20px'
+            }}>
+              <div style={{
+                width: '8px',
+                height: '8px',
+                borderRadius: '50%',
+                background: '#cbd5e1',
+                boxShadow: '0 0 0 4px #f8f9fa'
+              }} />
             </div>
           </div>
         </div>
@@ -1103,6 +1138,38 @@ export default function DashboardNuevo() {
                 </p>
               </div>
             )}
+          </div>
+        </div>
+
+        {/* DIVISOR MODERNO */}
+        <div style={{ 
+          margin: '50px 0',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}>
+          <div style={{
+            height: '1px',
+            background: 'linear-gradient(90deg, transparent 0%, #e5e7eb 20%, #e5e7eb 80%, transparent 100%)',
+            width: '100%',
+            position: 'relative'
+          }}>
+            <div style={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              background: '#f8f9fa',
+              padding: '0 20px'
+            }}>
+              <div style={{
+                width: '8px',
+                height: '8px',
+                borderRadius: '50%',
+                background: '#cbd5e1',
+                boxShadow: '0 0 0 4px #f8f9fa'
+              }} />
+            </div>
           </div>
         </div>
 
@@ -1411,6 +1478,38 @@ export default function DashboardNuevo() {
               </p>
             </div>
           )}
+        </div>
+
+        {/* DIVISOR MODERNO */}
+        <div style={{ 
+          margin: '50px 0',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}>
+          <div style={{
+            height: '1px',
+            background: 'linear-gradient(90deg, transparent 0%, #e5e7eb 20%, #e5e7eb 80%, transparent 100%)',
+            width: '100%',
+            position: 'relative'
+          }}>
+            <div style={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              background: '#f8f9fa',
+              padding: '0 20px'
+            }}>
+              <div style={{
+                width: '8px',
+                height: '8px',
+                borderRadius: '50%',
+                background: '#cbd5e1',
+                boxShadow: '0 0 0 4px #f8f9fa'
+              }} />
+            </div>
+          </div>
         </div>
 
         {/* MÉTRICAS CLAVE POR SUCURSAL */}
