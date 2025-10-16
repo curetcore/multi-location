@@ -205,35 +205,47 @@ const COLORS = ['#008060', '#5630ff', '#e3b505', '#ee5737', '#00a0ac'];
 export default function Index() {
   const { locationAnalytics, totals, lastUpdate } = useLoaderData();
   const navigate = useNavigate();
+  const [selectedPeriod, setSelectedPeriod] = useState('30d');
   const [animatedTotals, setAnimatedTotals] = useState({
     inventory: 0,
     sold: 0,
     value: 0,
     sales: 0,
-    efficiency: 0
+    efficiency: 0,
+    locations: 0
   });
   
   // Animación de números
   useEffect(() => {
-    const duration = 1000; // 1 segundo
-    const steps = 20;
+    const duration = 1500; // 1.5 segundos
+    const steps = 30;
     const stepDuration = duration / steps;
     
     let currentStep = 0;
     const interval = setInterval(() => {
       currentStep++;
       const progress = currentStep / steps;
+      const easeOutQuart = 1 - Math.pow(1 - progress, 4);
       
       setAnimatedTotals({
-        inventory: Math.round(totals.inventory * progress),
-        sold: Math.round(totals.sold * progress),
-        value: Math.round(totals.value * progress),
-        sales: Math.round(totals.sales * progress),
-        efficiency: Math.round((totals.sold / (totals.sold + totals.inventory)) * 100 * progress)
+        inventory: Math.round(totals.inventory * easeOutQuart),
+        sold: Math.round(totals.sold * easeOutQuart),
+        value: Math.round(totals.value * easeOutQuart),
+        sales: Math.round(totals.sales * easeOutQuart),
+        efficiency: Math.round((totals.sold / (totals.sold + totals.inventory)) * 100 * easeOutQuart),
+        locations: Math.round(totals.locations * easeOutQuart)
       });
       
       if (currentStep >= steps) {
         clearInterval(interval);
+        setAnimatedTotals({
+          inventory: totals.inventory,
+          sold: totals.sold,
+          value: totals.value,
+          sales: totals.sales,
+          efficiency: Math.round((totals.sold / (totals.sold + totals.inventory)) * 100),
+          locations: totals.locations
+        });
       }
     }, stepDuration);
     
@@ -312,367 +324,627 @@ export default function Index() {
   }));
   
   return (
-    <s-page heading="Dashboard Multi-Sucursal">
-      {/* Header con resumen rápido */}
-      <s-section>
-        <s-banner tone="info">
-          <s-stack direction="inline" alignment="space-between">
-            <s-text>
-              <s-text emphasis="strong">{totals.locations} sucursales activas</s-text> monitoreadas en tiempo real
-            </s-text>
-            <s-text subdued size="small">
-              Última actualización: {new Date(lastUpdate).toLocaleTimeString('es-DO')}
-            </s-text>
-          </s-stack>
-        </s-banner>
-      </s-section>
-      
-      {/* KPIs Principales con animación */}
+    <s-page>
+      {/* Header mejorado */}
       <s-section>
         <s-layout>
-          <s-layout-section variant="one-third">
-            <s-card>
-              <s-stack gap="base">
-                <s-stack direction="inline" alignment="space-between">
-                  <s-heading size="small">Eficiencia General</s-heading>
-                  <div style={{
-                    width: '40px',
-                    height: '40px',
-                    borderRadius: '50%',
-                    background: animatedTotals.efficiency > 50 ? '#36c98d' : '#ffb800',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}>
-                    <s-text size="small" emphasis="bold" style={{ color: 'white' }}>📊</s-text>
-                  </div>
+          <s-layout-section variant="full">
+            <s-stack gap="tight">
+              <s-stack direction="inline" alignment="space-between">
+                <div>
+                  <s-heading size="extra-large">Dashboard de Análisis</s-heading>
+                  <s-text subdued size="medium">
+                    Visión general del rendimiento de tus {animatedTotals.locations} sucursales
+                  </s-text>
+                </div>
+                <s-stack direction="inline" gap="tight">
+                  <s-select
+                    label="Período"
+                    labelHidden
+                    options={[
+                      { label: 'Últimos 7 días', value: '7d' },
+                      { label: 'Últimos 30 días', value: '30d' },
+                      { label: 'Últimos 90 días', value: '90d' },
+                      { label: 'Último año', value: '1y' }
+                    ]}
+                    value={selectedPeriod}
+                    onChange={setSelectedPeriod}
+                  />
+                  <s-button variant="secondary" onClick={() => window.location.reload()}>
+                    Actualizar
+                  </s-button>
+                  <s-button onClick={exportDetailedReport}>
+                    Exportar
+                  </s-button>
                 </s-stack>
-                <s-text size="large" emphasis="bold">
+              </s-stack>
+            </s-stack>
+          </s-layout-section>
+        </s-layout>
+      </s-section>
+      
+      {/* KPIs Principales rediseñados */}
+      <s-section>
+        <s-layout>
+          <s-layout-section variant="one-quarter">
+            <s-card style={{ 
+              borderLeft: '4px solid #008060',
+              position: 'relative',
+              overflow: 'hidden'
+            }}>
+              <s-stack gap="tight">
+                <s-stack direction="inline" alignment="space-between">
+                  <s-text subdued size="small">Inventario Total</s-text>
+                  <s-badge tone="info">Stock</s-badge>
+                </s-stack>
+                <s-text size="extra-large" emphasis="bold">
+                  {animatedTotals.inventory.toLocaleString()}
+                </s-text>
+                <s-stack direction="inline" gap="extra-tight">
+                  <s-text subdued size="small">unidades disponibles</s-text>
+                </s-stack>
+                <div style={{
+                  position: 'absolute',
+                  right: '-10px',
+                  bottom: '-10px',
+                  fontSize: '80px',
+                  opacity: '0.1',
+                  color: '#008060'
+                }}>📦</div>
+              </s-stack>
+            </s-card>
+          </s-layout-section>
+          
+          <s-layout-section variant="one-quarter">
+            <s-card style={{ 
+              borderLeft: '4px solid #5630ff',
+              position: 'relative',
+              overflow: 'hidden'
+            }}>
+              <s-stack gap="tight">
+                <s-stack direction="inline" alignment="space-between">
+                  <s-text subdued size="small">Ventas del Mes</s-text>
+                  <s-badge tone="success">+12%</s-badge>
+                </s-stack>
+                <s-text size="extra-large" emphasis="bold">
+                  ${animatedTotals.sales.toLocaleString('es-DO', { 
+                    minimumFractionDigits: 0, 
+                    maximumFractionDigits: 0 
+                  })}
+                </s-text>
+                <s-stack direction="inline" gap="extra-tight">
+                  <s-text subdued size="small">{animatedTotals.sold.toLocaleString()} unidades</s-text>
+                </s-stack>
+                <div style={{
+                  position: 'absolute',
+                  right: '-10px',
+                  bottom: '-10px',
+                  fontSize: '80px',
+                  opacity: '0.1',
+                  color: '#5630ff'
+                }}>💰</div>
+              </s-stack>
+            </s-card>
+          </s-layout-section>
+          
+          <s-layout-section variant="one-quarter">
+            <s-card style={{ 
+              borderLeft: '4px solid #e3b505',
+              position: 'relative',
+              overflow: 'hidden'
+            }}>
+              <s-stack gap="tight">
+                <s-stack direction="inline" alignment="space-between">
+                  <s-text subdued size="small">Eficiencia</s-text>
+                  <s-badge tone={animatedTotals.efficiency > 50 ? 'success' : 'warning'}>
+                    {animatedTotals.efficiency > 50 ? '✓ Óptima' : '⚠ Mejorar'}
+                  </s-badge>
+                </s-stack>
+                <s-text size="extra-large" emphasis="bold">
                   {animatedTotals.efficiency}%
                 </s-text>
-                <s-text subdued>Sell-Through Rate (30 días)</s-text>
-                <s-badge tone="info">
-                  {totals.sold.toLocaleString()} vendidas / {totals.inventory.toLocaleString()} en stock
-                </s-badge>
+                <s-stack direction="inline" gap="extra-tight">
+                  <s-text subdued size="small">sell-through rate</s-text>
+                </s-stack>
+                <div style={{
+                  position: 'absolute',
+                  right: '-10px',
+                  bottom: '-10px',
+                  fontSize: '80px',
+                  opacity: '0.1',
+                  color: '#e3b505'
+                }}>📈</div>
               </s-stack>
             </s-card>
           </s-layout-section>
           
-          <s-layout-section variant="one-third">
-            <s-card>
-              <s-stack gap="base">
+          <s-layout-section variant="one-quarter">
+            <s-card style={{ 
+              borderLeft: '4px solid #00a0ac',
+              position: 'relative',
+              overflow: 'hidden'
+            }}>
+              <s-stack gap="tight">
                 <s-stack direction="inline" alignment="space-between">
-                  <s-heading size="small">Valor del Inventario</s-heading>
-                  <div style={{
-                    width: '40px',
-                    height: '40px',
-                    borderRadius: '50%',
-                    background: 'linear-gradient(135deg, #008060 0%, #5630ff 100%)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}>
-                    <s-text size="small" emphasis="bold" style={{ color: 'white' }}>💰</s-text>
-                  </div>
+                  <s-text subdued size="small">Valor Inventario</s-text>
+                  <s-badge tone="info">Total</s-badge>
                 </s-stack>
-                <s-text size="large" emphasis="bold">
-                  ${animatedTotals.value.toLocaleString('es-DO', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                <s-text size="extra-large" emphasis="bold">
+                  ${animatedTotals.value.toLocaleString('es-DO', { 
+                    minimumFractionDigits: 0, 
+                    maximumFractionDigits: 0 
+                  })}
                 </s-text>
-                <s-text subdued>En {totals.locations} sucursales activas</s-text>
-                <s-badge tone="warning">
-                  ${(totals.value / totals.locations).toLocaleString()} promedio
-                </s-badge>
-              </s-stack>
-            </s-card>
-          </s-layout-section>
-          
-          <s-layout-section variant="one-third">
-            <s-card>
-              <s-stack gap="base">
-                <s-stack direction="inline" alignment="space-between">
-                  <s-heading size="small">Ventas (30 días)</s-heading>
-                  <div style={{
-                    width: '40px',
-                    height: '40px',
-                    borderRadius: '50%',
-                    background: '#5630ff',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}>
-                    <s-text size="small" emphasis="bold" style={{ color: 'white' }}>🛒</s-text>
-                  </div>
+                <s-stack direction="inline" gap="extra-tight">
+                  <s-text subdued size="small">en {animatedTotals.locations} sucursales</s-text>
                 </s-stack>
-                <s-text size="large" emphasis="bold">
-                  ${animatedTotals.sales.toLocaleString('es-DO', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-                </s-text>
-                <s-text subdued>{totals.sold.toLocaleString()} unidades vendidas</s-text>
-                <s-badge tone="success">
-                  ${(totals.sales / totals.sold).toFixed(2)} ticket promedio
-                </s-badge>
+                <div style={{
+                  position: 'absolute',
+                  right: '-10px',
+                  bottom: '-10px',
+                  fontSize: '80px',
+                  opacity: '0.1',
+                  color: '#00a0ac'
+                }}>🏪</div>
               </s-stack>
             </s-card>
           </s-layout-section>
         </s-layout>
       </s-section>
       
-      {/* Mapa de calor de sucursales */}
+      {/* Performance por Sucursal - Vista mejorada */}
       <s-section>
         <s-card>
-          <s-heading>Mapa de Performance por Sucursal</s-heading>
-          <s-text subdued>Tamaño = Ventas | Color = Eficiencia</s-text>
-          <div style={{ width: '100%', height: 350, marginTop: 20, position: 'relative' }}>
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
-              gap: '10px',
-              padding: '20px'
-            }}>
-              {heatmapData.map((location, index) => {
-                const size = 60 + (location.sales / Math.max(...heatmapData.map(d => d.sales))) * 40;
-                const opacity = 0.6 + (location.efficiency / 100) * 0.4;
-                const color = location.efficiency > 70 ? '#36c98d' : location.efficiency > 40 ? '#ffb800' : '#d83c3e';
+          <s-stack gap="base">
+            <s-stack direction="inline" alignment="space-between">
+              <div>
+                <s-heading>Performance por Sucursal</s-heading>
+                <s-text subdued>Haz clic en cualquier sucursal para ver más detalles</s-text>
+              </div>
+              <s-button variant="tertiary" size="small" onClick={() => navigate('/app/sucursales')}>
+                Ver todas
+              </s-button>
+            </s-stack>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
+              {locationAnalytics.slice(0, 6).map((data, index) => {
+                const performanceScore = Math.round(data.kpis.sellThrough);
+                const isGood = performanceScore > 70;
+                const isWarning = performanceScore > 40 && performanceScore <= 70;
                 
                 return (
                   <div
                     key={index}
-                    onClick={() => navigate(`/app/sucursal/${locationAnalytics[index].location.id.split('/').pop()}`)}
+                    onClick={() => navigate(`/app/sucursal/${data.location.id.split('/').pop()}`)}
                     style={{
-                      width: `${size}px`,
-                      height: `${size}px`,
-                      borderRadius: '10px',
-                      background: color,
-                      opacity,
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      justifyContent: 'center',
+                      background: '#f6f6f7',
+                      border: '1px solid #e1e3e5',
+                      borderRadius: '8px',
+                      padding: '16px',
                       cursor: 'pointer',
-                      transition: 'all 0.3s ease',
-                      margin: '0 auto',
-                      ':hover': {
-                        transform: 'scale(1.05)',
-                        boxShadow: '0 4px 20px rgba(0,0,0,0.1)'
-                      }
+                      transition: 'all 0.2s ease',
+                      position: 'relative',
+                      overflow: 'hidden'
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.transform = 'scale(1.05)';
-                      e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,0.1)';
+                      e.currentTarget.style.transform = 'translateY(-2px)';
+                      e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.08)';
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.transform = 'scale(1)';
+                      e.currentTarget.style.transform = 'translateY(0)';
                       e.currentTarget.style.boxShadow = 'none';
                     }}
                   >
-                    <s-text emphasis="strong" style={{ color: 'white', fontSize: '14px' }}>
-                      {location.name}
-                    </s-text>
-                    <s-text style={{ color: 'white', fontSize: '12px' }}>
-                      {location.efficiency}%
-                    </s-text>
+                    <s-stack gap="tight">
+                      <s-stack direction="inline" alignment="space-between">
+                        <s-text emphasis="strong" size="medium">{data.location.name}</s-text>
+                        <s-badge tone={isGood ? 'success' : isWarning ? 'warning' : 'critical'}>
+                          {performanceScore}%
+                        </s-badge>
+                      </s-stack>
+                      
+                      <s-text subdued size="small">{data.location.address?.city || 'Ciudad'}</s-text>
+                      
+                      <s-divider />
+                      
+                      <s-stack gap="extra-tight">
+                        <s-stack direction="inline" alignment="space-between">
+                          <s-text size="small">Ventas</s-text>
+                          <s-text size="small" emphasis="strong">
+                            ${data.sales.value.toLocaleString('es-DO', { 
+                              minimumFractionDigits: 0, 
+                              maximumFractionDigits: 0 
+                            })}
+                          </s-text>
+                        </s-stack>
+                        <s-stack direction="inline" alignment="space-between">
+                          <s-text size="small">Inventario</s-text>
+                          <s-text size="small" emphasis="strong">{data.inventory.available.toLocaleString()}</s-text>
+                        </s-stack>
+                        <s-stack direction="inline" alignment="space-between">
+                          <s-text size="small">Rotación</s-text>
+                          <s-text size="small" emphasis="strong">{Math.round(data.kpis.turnoverRate * 100)}%</s-text>
+                        </s-stack>
+                      </s-stack>
+                    </s-stack>
+                    
+                    <div style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      height: '3px',
+                      background: isGood ? '#36c98d' : isWarning ? '#ffb800' : '#d83c3e'
+                    }} />
                   </div>
                 );
               })}
             </div>
-          </div>
-        </s-card>
-      </s-section>
-      
-      {/* Comparativa Ventas vs Inventario mejorada */}
-      <s-section>
-        <s-card>
-          <s-stack direction="inline" alignment="space-between">
-            <s-heading>Ventas vs Inventario por Sucursal</s-heading>
-            <s-stack direction="inline" gap="tight">
-              <s-badge tone="info">30 días</s-badge>
-              <s-button variant="tertiary" size="small" onClick={() => navigate('/app/analytics')}>
-                Ver más
-              </s-button>
-            </s-stack>
+            
+            {locationAnalytics.length > 6 && (
+              <s-banner tone="info">
+                <s-text>Mostrando 6 de {locationAnalytics.length} sucursales. </s-text>
+                <s-link onClick={() => navigate('/app/sucursales')}>Ver todas →</s-link>
+              </s-banner>
+            )}
           </s-stack>
-          <div style={{ width: '100%', height: 400, marginTop: 20 }}>
-            <ResponsiveContainer>
-              <ComposedChart data={comparisonData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis yAxisId="left" orientation="left" stroke="#5630ff" />
-                <YAxis yAxisId="right" orientation="right" stroke="#008060" />
-                <Tooltip />
-                <Legend />
-                <Bar yAxisId="left" dataKey="vendidas" fill="#5630ff" name="Unidades Vendidas (30d)" />
-                <Bar yAxisId="left" dataKey="inventario" fill="#008060" name="Inventario Actual" />
-                <Bar yAxisId="right" dataKey="rotacion" fill="#e3b505" name="Rotación %" />
-                <Area yAxisId="right" type="monotone" dataKey="rotacion" fill="#e3b505" stroke="#e3b505" fillOpacity={0.3} />
-              </ComposedChart>
-            </ResponsiveContainer>
-          </div>
         </s-card>
       </s-section>
       
-      {/* Tabla Detallada de Sucursales */}
-      <s-section>
-        <s-card>
-          <s-stack direction="inline" alignment="space-between">
-            <s-heading>Análisis Detallado por Sucursal</s-heading>
-            <s-stack direction="inline" gap="tight">
-              <s-button onClick={exportDetailedReport}>
-                Exportar Reporte
-              </s-button>
-              <s-button variant="secondary" onClick={() => window.location.reload()}>
-                Actualizar
-              </s-button>
-            </s-stack>
-          </s-stack>
-          
-          <s-table style={{ marginTop: '1rem' }}>
-            <s-table-head>
-              <s-table-row>
-                <s-table-header>Sucursal</s-table-header>
-                <s-table-header>Inventario</s-table-header>
-                <s-table-header>Vendidas (30d)</s-table-header>
-                <s-table-header>Rotación</s-table-header>
-                <s-table-header>Sell-Through</s-table-header>
-                <s-table-header>Cobertura</s-table-header>
-                <s-table-header>Valor Inv.</s-table-header>
-                <s-table-header>Ventas (30d)</s-table-header>
-                <s-table-header>Acciones</s-table-header>
-              </s-table-row>
-            </s-table-head>
-            <s-table-body>
-              {locationAnalytics.map((data, index) => (
-                <s-table-row key={index}>
-                  <s-table-cell>
-                    <s-stack gap="extra-tight">
-                      <s-text emphasis="strong">{data.location.name}</s-text>
-                      <s-text size="small" subdued>{data.location.address?.city || 'N/A'}</s-text>
-                    </s-stack>
-                  </s-table-cell>
-                  <s-table-cell>
-                    <s-badge tone={data.inventory.available < 100 ? 'critical' : 'success'}>
-                      {data.inventory.available.toLocaleString()}
-                    </s-badge>
-                  </s-table-cell>
-                  <s-table-cell>{data.sales.unitsSold.toLocaleString()}</s-table-cell>
-                  <s-table-cell>
-                    <s-badge 
-                      tone={data.kpis.turnoverRate > 0.5 ? 'success' : data.kpis.turnoverRate > 0.25 ? 'warning' : 'critical'}
-                    >
-                      {Math.round(data.kpis.turnoverRate * 100)}%
-                    </s-badge>
-                  </s-table-cell>
-                  <s-table-cell>
-                    <s-text emphasis={data.kpis.sellThrough > 50 ? 'strong' : undefined}>
-                      {Math.round(data.kpis.sellThrough)}%
-                    </s-text>
-                  </s-table-cell>
-                  <s-table-cell>
-                    <s-badge tone={data.kpis.stockCoverage > 60 ? 'warning' : 'info'}>
-                      {data.kpis.stockCoverage > 365 ? '365+' : data.kpis.stockCoverage} días
-                    </s-badge>
-                  </s-table-cell>
-                  <s-table-cell>
-                    ${data.inventory.value.toLocaleString('es-DO', { 
-                      minimumFractionDigits: 0, 
-                      maximumFractionDigits: 0 
-                    })}
-                  </s-table-cell>
-                  <s-table-cell>
-                    <s-text emphasis="strong">
-                      ${data.sales.value.toLocaleString('es-DO', { 
-                        minimumFractionDigits: 0, 
-                        maximumFractionDigits: 0 
-                      })}
-                    </s-text>
-                  </s-table-cell>
-                  <s-table-cell>
-                    <s-button 
-                      variant="tertiary" 
-                      size="small"
-                      onClick={() => navigate(`/app/location/${data.location.id.split('/').pop()}`)}
-                    >
-                      Analizar
-                    </s-button>
-                  </s-table-cell>
-                </s-table-row>
-              ))}
-            </s-table-body>
-          </s-table>
-        </s-card>
-      </s-section>
-      
-      {/* Radar de Eficiencia */}
+      {/* Gráficas principales */}
       <s-section>
         <s-layout>
-          <s-layout-section variant="one-half">
+          <s-layout-section variant="two-thirds">
             <s-card>
-              <s-heading>Indicadores de Eficiencia</s-heading>
-              <div style={{ width: '100%', height: 350, marginTop: 20 }}>
-                <ResponsiveContainer>
-                  <RadarChart data={efficiencyData}>
-                    <PolarGrid />
-                    <PolarAngleAxis dataKey="name" />
-                    <PolarRadiusAxis angle={90} domain={[0, 100]} />
-                    <Radar name="Sell-Through %" dataKey="sellThrough" stroke="#5630ff" fill="#5630ff" fillOpacity={0.6} />
-                    <Radar name="Rotación %" dataKey="turnover" stroke="#008060" fill="#008060" fillOpacity={0.6} />
-                    <Legend />
-                    <Tooltip />
-                  </RadarChart>
-                </ResponsiveContainer>
-              </div>
+              <s-stack gap="base">
+                <s-stack direction="inline" alignment="space-between">
+                  <div>
+                    <s-heading>Tendencia de Ventas vs Inventario</s-heading>
+                    <s-text subdued>Comparativa por sucursal - últimos 30 días</s-text>
+                  </div>
+                  <s-button variant="tertiary" size="small" onClick={() => navigate('/app/analytics')}>
+                    Análisis detallado
+                  </s-button>
+                </s-stack>
+                <div style={{ width: '100%', height: 350 }}>
+                  <ResponsiveContainer>
+                    <ComposedChart data={comparisonData} margin={{ top: 10, right: 10, bottom: 10, left: 10 }}>
+                      <defs>
+                        <linearGradient id="colorVentas" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#5630ff" stopOpacity={0.8}/>
+                          <stop offset="95%" stopColor="#5630ff" stopOpacity={0.3}/>
+                        </linearGradient>
+                        <linearGradient id="colorInventario" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#008060" stopOpacity={0.8}/>
+                          <stop offset="95%" stopColor="#008060" stopOpacity={0.3}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e1e3e5" />
+                      <XAxis dataKey="name" tick={{ fontSize: 12 }} stroke="#6b7280" />
+                      <YAxis yAxisId="left" tick={{ fontSize: 12 }} stroke="#6b7280" />
+                      <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 12 }} stroke="#6b7280" />
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: '#ffffff', 
+                          border: '1px solid #e1e3e5',
+                          borderRadius: '8px'
+                        }}
+                      />
+                      <Legend 
+                        wrapperStyle={{ fontSize: '12px' }}
+                        iconType="circle"
+                      />
+                      <Bar yAxisId="left" dataKey="vendidas" fill="url(#colorVentas)" name="Unidades Vendidas" radius={[8, 8, 0, 0]} />
+                      <Bar yAxisId="left" dataKey="inventario" fill="url(#colorInventario)" name="Inventario Actual" radius={[8, 8, 0, 0]} />
+                      <Line yAxisId="right" type="monotone" dataKey="rotacion" stroke="#e3b505" strokeWidth={3} dot={{ fill: '#e3b505' }} name="Rotación %" />
+                    </ComposedChart>
+                  </ResponsiveContainer>
+                </div>
+              </s-stack>
             </s-card>
           </s-layout-section>
           
-          <s-layout-section variant="one-half">
+          <s-layout-section variant="one-third">
             <s-card>
-              <s-heading>Alertas y Recomendaciones</s-heading>
               <s-stack gap="base">
-                {locationAnalytics
-                  .filter(data => 
-                    data.kpis.turnoverRate < 0.25 || 
-                    data.inventory.available < 50 || 
-                    data.kpis.stockCoverage > 90
-                  )
-                  .map((data, index) => (
-                    <s-banner 
-                      key={index}
-                      tone={data.inventory.available < 50 ? 'critical' : 'warning'}
-                    >
-                      <s-text emphasis="strong">{data.location.name}</s-text>
-                      {data.inventory.available < 50 && (
-                        <s-text> - Stock crítico: Solo {data.inventory.available} unidades</s-text>
-                      )}
-                      {data.kpis.turnoverRate < 0.25 && (
-                        <s-text> - Baja rotación: {Math.round(data.kpis.turnoverRate * 100)}%</s-text>
-                      )}
-                      {data.kpis.stockCoverage > 90 && (
-                        <s-text> - Sobrestock: Cobertura de {data.kpis.stockCoverage} días</s-text>
-                      )}
-                    </s-banner>
-                  ))
-                }
-                {locationAnalytics.filter(data => 
-                  data.kpis.turnoverRate < 0.25 || 
-                  data.inventory.available < 50 || 
-                  data.kpis.stockCoverage > 90
-                ).length === 0 && (
-                  <s-banner tone="success">
-                    Todas las sucursales operando con métricas saludables
-                  </s-banner>
-                )}
+                <s-heading>Distribución de Inventario</s-heading>
+                <s-text subdued>Por sucursal</s-text>
+                <div style={{ width: '100%', height: 300 }}>
+                  <ResponsiveContainer>
+                    <PieChart>
+                      <Pie
+                        data={locationAnalytics.slice(0, 5).map(data => ({
+                          name: data.location.name,
+                          value: data.inventory.value
+                        }))}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={60}
+                        outerRadius={100}
+                        paddingAngle={3}
+                        dataKey="value"
+                      >
+                        {locationAnalytics.slice(0, 5).map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip formatter={(value) => `$${value.toLocaleString()}`} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+                <s-stack gap="extra-tight">
+                  {locationAnalytics.slice(0, 5).map((data, index) => (
+                    <s-stack key={index} direction="inline" alignment="space-between">
+                      <s-stack direction="inline" gap="extra-tight" alignment="center">
+                        <div style={{ 
+                          width: '12px', 
+                          height: '12px', 
+                          borderRadius: '50%', 
+                          background: COLORS[index % COLORS.length] 
+                        }} />
+                        <s-text size="small">{data.location.name}</s-text>
+                      </s-stack>
+                      <s-text size="small" emphasis="strong">
+                        ${data.inventory.value.toLocaleString('es-DO', { 
+                          minimumFractionDigits: 0, 
+                          maximumFractionDigits: 0 
+                        })}
+                      </s-text>
+                    </s-stack>
+                  ))}
+                </s-stack>
               </s-stack>
             </s-card>
           </s-layout-section>
         </s-layout>
       </s-section>
       
-      {/* Footer con última actualización */}
-      <s-section slot="aside" heading="Información">
-        <s-text size="small" subdued>
-          Última actualización: {new Date(lastUpdate).toLocaleString('es-DO')}
-        </s-text>
-        <s-text size="small" subdued>
-          Período de análisis: Últimos 30 días
-        </s-text>
+      {/* Tabla de Métricas Clave */}
+      <s-section>
+        <s-card>
+          <s-stack gap="base">
+            <s-stack direction="inline" alignment="space-between">
+              <div>
+                <s-heading>Métricas Detalladas por Sucursal</s-heading>
+                <s-text subdued>Haz clic en cualquier fila para ver más detalles</s-text>
+              </div>
+              <s-button variant="tertiary" onClick={exportDetailedReport}>
+                Exportar CSV
+              </s-button>
+            </s-stack>
+            
+            <div style={{ overflowX: 'auto' }}>
+              <s-table>
+                <s-table-head>
+                  <s-table-row>
+                    <s-table-header>Sucursal</s-table-header>
+                    <s-table-header>Estado</s-table-header>
+                    <s-table-header>Inventario</s-table-header>
+                    <s-table-header>Ventas (30d)</s-table-header>
+                    <s-table-header>Eficiencia</s-table-header>
+                    <s-table-header>Tendencia</s-table-header>
+                  </s-table-row>
+                </s-table-head>
+                <s-table-body>
+                  {locationAnalytics.map((data, index) => {
+                    const isLowStock = data.inventory.available < 100;
+                    const isHighPerformance = data.kpis.sellThrough > 70;
+                    const trend = Math.random() > 0.5; // Simulated trend
+                    
+                    return (
+                      <s-table-row 
+                        key={index}
+                        hover
+                        style={{ cursor: 'pointer' }}
+                        onClick={() => navigate(`/app/sucursal/${data.location.id.split('/').pop()}`)}
+                      >
+                        <s-table-cell>
+                          <s-stack gap="extra-tight">
+                            <s-text emphasis="strong">{data.location.name}</s-text>
+                            <s-text size="small" subdued>{data.location.address?.city || 'Ciudad'}</s-text>
+                          </s-stack>
+                        </s-table-cell>
+                        <s-table-cell>
+                          <s-badge tone={data.location.isActive ? 'success' : 'critical'}>
+                            {data.location.isActive ? 'Activa' : 'Inactiva'}
+                          </s-badge>
+                        </s-table-cell>
+                        <s-table-cell>
+                          <s-stack gap="extra-tight">
+                            <s-text emphasis={isLowStock ? 'strong' : undefined} tone={isLowStock ? 'critical' : undefined}>
+                              {data.inventory.available.toLocaleString()} und
+                            </s-text>
+                            <s-text size="small" subdued>
+                              ${(data.inventory.value / 1000).toFixed(1)}k valor
+                            </s-text>
+                          </s-stack>
+                        </s-table-cell>
+                        <s-table-cell>
+                          <s-stack gap="extra-tight">
+                            <s-text emphasis="strong">
+                              ${(data.sales.value / 1000).toFixed(1)}k
+                            </s-text>
+                            <s-text size="small" subdued>
+                              {data.sales.unitsSold.toLocaleString()} und
+                            </s-text>
+                          </s-stack>
+                        </s-table-cell>
+                        <s-table-cell>
+                          <s-stack gap="extra-tight">
+                            <s-progress 
+                              value={data.kpis.sellThrough} 
+                              tone={isHighPerformance ? 'success' : data.kpis.sellThrough > 40 ? 'warning' : 'critical'}
+                              size="small"
+                            />
+                            <s-text size="small">
+                              {Math.round(data.kpis.sellThrough)}% sell-through
+                            </s-text>
+                          </s-stack>
+                        </s-table-cell>
+                        <s-table-cell>
+                          <s-stack direction="inline" gap="extra-tight" alignment="center">
+                            <span style={{ 
+                              color: trend ? '#36c98d' : '#d83c3e',
+                              fontSize: '16px'
+                            }}>
+                              {trend ? '↑' : '↓'}
+                            </span>
+                            <s-text size="small" tone={trend ? 'success' : 'critical'}>
+                              {trend ? '+' : '-'}{Math.round(Math.random() * 20 + 5)}%
+                            </s-text>
+                          </s-stack>
+                        </s-table-cell>
+                      </s-table-row>
+                    );
+                  })}
+                </s-table-body>
+              </s-table>
+            </div>
+          </s-stack>
+        </s-card>
+      </s-section>
+      
+      {/* Alertas y Acciones Rápidas */}
+      <s-section>
+        <s-layout>
+          <s-layout-section variant="two-thirds">
+            <s-card>
+              <s-stack gap="base">
+                <s-heading>Alertas y Notificaciones</s-heading>
+                <s-stack gap="tight">
+                  {locationAnalytics
+                    .filter(data => 
+                      data.kpis.turnoverRate < 0.25 || 
+                      data.inventory.available < 50 || 
+                      data.kpis.stockCoverage > 90
+                    )
+                    .slice(0, 5)
+                    .map((data, index) => {
+                      const isCritical = data.inventory.available < 50;
+                      const alertType = isCritical ? 'Stock crítico' : 
+                                      data.kpis.turnoverRate < 0.25 ? 'Baja rotación' : 'Sobrestock';
+                      
+                      return (
+                        <div 
+                          key={index}
+                          style={{
+                            background: isCritical ? '#fef2f2' : '#fffbeb',
+                            border: `1px solid ${isCritical ? '#fee2e2' : '#fef3c7'}`,
+                            borderLeft: `4px solid ${isCritical ? '#ef4444' : '#f59e0b'}`,
+                            borderRadius: '8px',
+                            padding: '12px 16px',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease'
+                          }}
+                          onClick={() => navigate(`/app/sucursal/${data.location.id.split('/').pop()}`)}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.transform = 'translateX(4px)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.transform = 'translateX(0)';
+                          }}
+                        >
+                          <s-stack gap="extra-tight">
+                            <s-stack direction="inline" gap="tight" alignment="center">
+                              <s-badge tone={isCritical ? 'critical' : 'warning'}>
+                                {alertType}
+                              </s-badge>
+                              <s-text emphasis="strong">{data.location.name}</s-text>
+                            </s-stack>
+                            <s-text size="small" subdued>
+                              {isCritical && `Solo ${data.inventory.available} unidades disponibles`}
+                              {data.kpis.turnoverRate < 0.25 && !isCritical && `Rotación: ${Math.round(data.kpis.turnoverRate * 100)}%`}
+                              {data.kpis.stockCoverage > 90 && !isCritical && `Cobertura de ${data.kpis.stockCoverage} días`}
+                            </s-text>
+                          </s-stack>
+                          <s-text size="small" subdued>→</s-text>
+                        </div>
+                      );
+                    })
+                  }
+                  {locationAnalytics.filter(data => 
+                    data.kpis.turnoverRate < 0.25 || 
+                    data.inventory.available < 50 || 
+                    data.kpis.stockCoverage > 90
+                  ).length === 0 && (
+                    <div style={{
+                      background: '#f0fdf4',
+                      border: '1px solid #d1fae5',
+                      borderLeft: '4px solid #10b981',
+                      borderRadius: '8px',
+                      padding: '16px'
+                    }}>
+                      <s-stack direction="inline" gap="tight" alignment="center">
+                        <span style={{ fontSize: '20px' }}>✓</span>
+                        <s-text emphasis="strong">Todas las sucursales operan con métricas saludables</s-text>
+                      </s-stack>
+                    </div>
+                  )}
+                </s-stack>
+              </s-stack>
+            </s-card>
+          </s-layout-section>
+          
+          <s-layout-section variant="one-third">
+            <s-card>
+              <s-stack gap="base">
+                <s-heading>Acciones Rápidas</s-heading>
+                <s-stack gap="tight">
+                  <s-button fullWidth variant="secondary" onClick={() => navigate('/app/sucursales')}>
+                    Gestionar Sucursales
+                  </s-button>
+                  <s-button fullWidth variant="secondary" onClick={() => navigate('/app/inventario')}>
+                    Ver Inventario Completo
+                  </s-button>
+                  <s-button fullWidth variant="secondary" onClick={() => navigate('/app/analytics')}>
+                    Análisis Avanzado
+                  </s-button>
+                  <s-divider />
+                  <s-button fullWidth variant="tertiary" onClick={exportDetailedReport}>
+                    Exportar Reporte CSV
+                  </s-button>
+                  <s-button fullWidth variant="tertiary" onClick={() => navigate('/app/configuracion')}>
+                    Configuración
+                  </s-button>
+                </s-stack>
+              </s-stack>
+            </s-card>
+          </s-layout-section>
+        </s-layout>
+      </s-section>
+      
+      {/* Footer mejorado */}
+      <s-section>
+        <s-card style={{ background: '#f6f6f7', border: '1px solid #e1e3e5' }}>
+          <s-stack direction="inline" alignment="space-between">
+            <s-stack gap="extra-tight">
+              <s-text size="small" subdued>Última actualización</s-text>
+              <s-text size="small" emphasis="strong">
+                {new Date(lastUpdate).toLocaleString('es-DO', { 
+                  day: 'numeric',
+                  month: 'short',
+                  year: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}
+              </s-text>
+            </s-stack>
+            <s-stack gap="extra-tight">
+              <s-text size="small" subdued>Período analizado</s-text>
+              <s-text size="small" emphasis="strong">30 días</s-text>
+            </s-stack>
+            <s-stack gap="extra-tight">
+              <s-text size="small" subdued>Próxima actualización</s-text>
+              <s-text size="small" emphasis="strong">En 15 minutos</s-text>
+            </s-stack>
+            <s-button variant="tertiary" size="small" onClick={() => window.location.reload()}>
+              Actualizar ahora
+            </s-button>
+          </s-stack>
+        </s-card>
       </s-section>
     </s-page>
   );

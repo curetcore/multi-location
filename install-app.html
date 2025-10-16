@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Instalar Multi-Location Analytics</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background: #f3f4f6;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 400px;
+        }
+        h1 {
+            color: #111827;
+            margin-bottom: 20px;
+        }
+        .input-group {
+            margin: 20px 0;
+            text-align: left;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #374151;
+            font-weight: 500;
+        }
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        input:focus {
+            outline: none;
+            border-color: #008060;
+            box-shadow: 0 0 0 3px rgba(0,128,96,0.1);
+        }
+        button {
+            background: #008060;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 20px;
+        }
+        button:hover {
+            background: #006e52;
+        }
+        .hint {
+            color: #6b7280;
+            font-size: 14px;
+            margin-top: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Instalar Multi-Location Analytics</h1>
+        <p>Ingresa el nombre de tu tienda para instalar la aplicación</p>
+        
+        <div class="input-group">
+            <label for="shop">Nombre de tu tienda:</label>
+            <input 
+                type="text" 
+                id="shop" 
+                placeholder="mi-tienda" 
+                value="pitagora-2"
+                autofocus
+            >
+            <div class="hint">Sin .myshopify.com</div>
+        </div>
+        
+        <button onclick="installApp()">Instalar Aplicación</button>
+    </div>
+
+    <script>
+        function installApp() {
+            const shop = document.getElementById('shop').value.trim();
+            if (!shop) {
+                alert('Por favor ingresa el nombre de tu tienda');
+                return;
+            }
+            
+            // Asegurar que tenga el dominio completo
+            const fullShop = shop.includes('.myshopify.com') 
+                ? shop 
+                : shop + '.myshopify.com';
+            
+            // Redirigir a la URL de instalación
+            const installUrl = `https://shopify.curetshop.com/api/auth?shop=${fullShop}`;
+            window.location.href = installUrl;
+        }
+        
+        // Permitir instalar con Enter
+        document.getElementById('shop').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                installApp();
+            }
+        });
+    </script>
+</body>
+</html>
