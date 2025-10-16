@@ -510,47 +510,77 @@ export default function DashboardNuevo() {
           </div>
 
           {/* Métricas resumen en el header */}
-          <div style={{ display: 'flex', gap: '35px', alignItems: 'center', marginTop: '25px' }}>
-            <div>
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: '1fr 1fr 1fr 2fr auto',
+            gap: '40px', 
+            alignItems: 'center', 
+            marginTop: '30px',
+            paddingBottom: '10px'
+          }}>
+            <div style={{
+              borderRight: '1px solid rgba(255,255,255,0.2)',
+              paddingRight: '40px'
+            }}>
               <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', margin: '0 0 5px 0', textTransform: 'uppercase' }}>Ventas (30 días)</p>
-              <p style={{ color: 'white', fontSize: '26px', fontWeight: '700', margin: 0 }}>
+              <p style={{ color: 'white', fontSize: '28px', fontWeight: '700', margin: 0 }}>
                 ${metrics.totalSales.toLocaleString()}
               </p>
             </div>
-            <div style={{ width: '1px', height: '40px', background: 'rgba(255,255,255,0.2)' }} />
-            <div>
+            <div style={{
+              borderRight: '1px solid rgba(255,255,255,0.2)',
+              paddingRight: '40px'
+            }}>
               <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', margin: '0 0 5px 0', textTransform: 'uppercase' }}>Órdenes (30 días)</p>
-              <p style={{ color: 'white', fontSize: '26px', fontWeight: '700', margin: 0 }}>
+              <p style={{ color: 'white', fontSize: '28px', fontWeight: '700', margin: 0 }}>
                 {metrics.totalOrders}
               </p>
             </div>
-            <div style={{ width: '1px', height: '40px', background: 'rgba(255,255,255,0.2)' }} />
-            <div>
+            <div style={{
+              borderRight: '1px solid rgba(255,255,255,0.2)',
+              paddingRight: '40px'
+            }}>
               <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', margin: '0 0 5px 0', textTransform: 'uppercase' }}>Ticket Promedio</p>
-              <p style={{ color: 'white', fontSize: '26px', fontWeight: '700', margin: 0 }}>
+              <p style={{ color: 'white', fontSize: '28px', fontWeight: '700', margin: 0 }}>
                 ${metrics.avgTicket}
               </p>
             </div>
-            <div style={{ width: '1px', height: '40px', background: 'rgba(255,255,255,0.2)' }} />
-            <div>
+            <div style={{
+              borderRight: '1px solid rgba(255,255,255,0.2)',
+              paddingRight: '40px'
+            }}>
               <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', margin: '0 0 5px 0', textTransform: 'uppercase' }}>Sucursal Líder (30 días)</p>
-              <p style={{ color: 'white', fontSize: '20px', fontWeight: '700', margin: 0 }}>
-                {locationMetrics && locationMetrics.length > 0 
-                  ? locationMetrics.reduce((top, loc) => loc.sales > top.sales ? loc : top).name
-                  : 'Sin datos'}
-              </p>
-              <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '14px', margin: 0 }}>
-                ${locationMetrics && locationMetrics.length > 0 
-                  ? Math.round(locationMetrics.reduce((top, loc) => loc.sales > top.sales ? loc : top).sales).toLocaleString()
-                  : '0'} • {locationMetrics && locationMetrics.length > 0 
-                  ? locationMetrics.reduce((top, loc) => loc.sales > top.sales ? loc : top).orders
-                  : '0'} órdenes
-              </p>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '15px' }}>
+                <p style={{ color: 'white', fontSize: '22px', fontWeight: '700', margin: 0 }}>
+                  {locationMetrics && locationMetrics.length > 0 
+                    ? locationMetrics.reduce((top, loc) => loc.sales > top.sales ? loc : top).name
+                    : 'Sin datos'}
+                </p>
+                <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '14px', margin: 0 }}>
+                  ${locationMetrics && locationMetrics.length > 0 
+                    ? Math.round(locationMetrics.reduce((top, loc) => loc.sales > top.sales ? loc : top).sales).toLocaleString()
+                    : '0'} • {locationMetrics && locationMetrics.length > 0 
+                    ? locationMetrics.reduce((top, loc) => loc.sales > top.sales ? loc : top).orders
+                    : '0'} órdenes
+                </p>
+              </div>
             </div>
-            <div style={{ flex: 1 }} />
-            <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.7)', textAlign: 'right' }}>
-              <span style={{ fontSize: '11px' }}>ACTUALIZADO</span><br />
-              {new Date(lastUpdate).toLocaleTimeString('es-DO', { hour: '2-digit', minute: '2-digit' })}
+            <div style={{ 
+              fontSize: '12px', 
+              color: 'rgba(255,255,255,0.7)', 
+              textAlign: 'right',
+              minWidth: '100px'
+            }}>
+              <div style={{ 
+                fontSize: '11px', 
+                textTransform: 'uppercase',
+                marginBottom: '2px'
+              }}>
+                ACTUALIZADO
+              </div>
+              <div style={{ fontSize: '16px', fontWeight: '500', color: 'rgba(255,255,255,0.9)' }}>
+                {new Date(lastUpdate).toLocaleTimeString('es-DO', { hour: '2-digit', minute: '2-digit' })}
+              </div>
             </div>
           </div>
         </div>
