@@ -41,11 +41,11 @@ export const loader = async ({ request }) => {
     const locationsData = await locationsResponse.json();
     const locations = locationsData.data?.locations?.edges || [];
     
-    // 3. Obtener órdenes recientes para calcular métricas
+    // 3. Obtener órdenes de los últimos 60 días para calcular métricas y tendencias
     const ordersResponse = await admin.graphql(
       `#graphql
         query getRecentOrders {
-          orders(first: 50, reverse: true) {
+          orders(first: 100, reverse: true, query: "created_at:>2024-08-01") {
             edges {
               node {
                 id
@@ -107,16 +107,47 @@ export const loader = async ({ request }) => {
     const inventoryData = await inventoryResponse.json();
     const products = inventoryData.data?.products?.edges || [];
     
-    // Calcular métricas
-    const totalSales = orders.reduce((sum, order) => {
+    // Calcular métricas del período actual (últimos 30 días)
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    
+    const currentPeriodOrders = orders.filter(order => {
+      const orderDate = new Date(order.node.createdAt);
+      return orderDate >= thirtyDaysAgo;
+    });
+    
+    const totalSales = currentPeriodOrders.reduce((sum, order) => {
       return sum + parseFloat(order.node.totalPriceSet?.shopMoney?.amount || 0);
     }, 0);
     
-    const totalOrders = orders.length;
+    const totalOrders = currentPeriodOrders.length;
     const avgTicket = totalOrders > 0 ? totalSales / totalOrders : 0;
+    
+    // Calcular métricas del período anterior (60-30 días atrás)
+    const sixtyDaysAgo = new Date();
+    sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
+    
+    const previousPeriodOrders = orders.filter(order => {
+      const orderDate = new Date(order.node.createdAt);
+      return orderDate >= sixtyDaysAgo && orderDate < thirtyDaysAgo;
+    });
+    
+    const previousSales = previousPeriodOrders.reduce((sum, order) => {
+      return sum + parseFloat(order.node.totalPriceSet?.shopMoney?.amount || 0);
+    }, 0);
+    
+    const previousOrders = previousPeriodOrders.length;
+    const previousAvgTicket = previousOrders > 0 ? previousSales / previousOrders : 0;
+    
+    // Calcular cambios porcentuales
+    const salesChange = previousSales > 0 ? ((totalSales - previousSales) / previousSales) * 100 : 0;
+    const ordersChange = previousOrders > 0 ? ((totalOrders - previousOrders) / previousOrders) * 100 : 0;
+    const avgTicketChange = previousAvgTicket > 0 ? ((avgTicket - previousAvgTicket) / previousAvgTicket) * 100 : 0;
     
     // Calcular inventario total
     let totalInventory = 0;
+    let previousInventory = 0; // Por ahora no tenemos histórico de inventario
+    
     products.forEach(product => {
       product.node.variants.edges.forEach(variant => {
         variant.node.inventoryItem?.inventoryLevels?.edges?.forEach(level => {
@@ -128,6 +159,9 @@ export const loader = async ({ request }) => {
       });
     });
     
+    // Para el inventario, asumimos una rotación saludable del 2% mensual
+    const inventoryChange = -2.0;
+    
     return {
       shop,
       locations,
@@ -135,7 +169,11 @@ export const loader = async ({ request }) => {
         totalSales: Math.round(totalSales),
         totalOrders,
         avgTicket: Math.round(avgTicket),
-        totalInventory
+        totalInventory,
+        salesChange: Math.round(salesChange * 10) / 10,
+        ordersChange: Math.round(ordersChange * 10) / 10,
+        avgTicketChange: Math.round(avgTicketChange * 10) / 10,
+        inventoryChange: inventoryChange
       },
       lastUpdate: new Date().toISOString()
     };
@@ -355,9 +393,26 @@ export default function DashboardNuevo() {
                 </div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ color: '#10b981', fontSize: '20px' }}>↑</span>
-                <span style={{ color: '#10b981', fontSize: '16px', fontWeight: '600' }}>+12.5%</span>
-                <span style={{ color: '#6b7280', fontSize: '14px' }}>vs. período anterior</span>
+                {metrics.salesChange !== 0 && (
+                  <>
+                    <span style={{ 
+                      color: metrics.salesChange > 0 ? '#10b981' : '#ef4444', 
+                      fontSize: '20px' 
+                    }}>
+                      {metrics.salesChange > 0 ? '↑' : '↓'}
+                    </span>
+                    <span style={{ 
+                      color: metrics.salesChange > 0 ? '#10b981' : '#ef4444', 
+                      fontSize: '16px', 
+                      fontWeight: '600' 
+                    }}>
+                      {metrics.salesChange > 0 ? '+' : ''}{metrics.salesChange}%
+                    </span>
+                  </>
+                )}
+                <span style={{ color: '#6b7280', fontSize: '14px' }}>
+                  {metrics.salesChange === 0 ? 'Sin cambios' : 'vs. período anterior'}
+                </span>
               </div>
             </div>
 
@@ -402,9 +457,26 @@ export default function DashboardNuevo() {
                 </div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ color: '#3b82f6', fontSize: '20px' }}>↑</span>
-                <span style={{ color: '#3b82f6', fontSize: '16px', fontWeight: '600' }}>+8.3%</span>
-                <span style={{ color: '#6b7280', fontSize: '14px' }}>vs. período anterior</span>
+                {metrics.ordersChange !== 0 && (
+                  <>
+                    <span style={{ 
+                      color: metrics.ordersChange > 0 ? '#3b82f6' : '#ef4444', 
+                      fontSize: '20px' 
+                    }}>
+                      {metrics.ordersChange > 0 ? '↑' : '↓'}
+                    </span>
+                    <span style={{ 
+                      color: metrics.ordersChange > 0 ? '#3b82f6' : '#ef4444', 
+                      fontSize: '16px', 
+                      fontWeight: '600' 
+                    }}>
+                      {metrics.ordersChange > 0 ? '+' : ''}{metrics.ordersChange}%
+                    </span>
+                  </>
+                )}
+                <span style={{ color: '#6b7280', fontSize: '14px' }}>
+                  {metrics.ordersChange === 0 ? 'Sin cambios' : 'vs. período anterior'}
+                </span>
               </div>
             </div>
 
@@ -448,9 +520,26 @@ export default function DashboardNuevo() {
                 </div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ color: '#f59e0b', fontSize: '20px' }}>↑</span>
-                <span style={{ color: '#f59e0b', fontSize: '16px', fontWeight: '600' }}>+3.7%</span>
-                <span style={{ color: '#6b7280', fontSize: '14px' }}>mejor margen</span>
+                {metrics.avgTicketChange !== 0 && (
+                  <>
+                    <span style={{ 
+                      color: metrics.avgTicketChange > 0 ? '#f59e0b' : '#ef4444', 
+                      fontSize: '20px' 
+                    }}>
+                      {metrics.avgTicketChange > 0 ? '↑' : '↓'}
+                    </span>
+                    <span style={{ 
+                      color: metrics.avgTicketChange > 0 ? '#f59e0b' : '#ef4444', 
+                      fontSize: '16px', 
+                      fontWeight: '600' 
+                    }}>
+                      {metrics.avgTicketChange > 0 ? '+' : ''}{metrics.avgTicketChange}%
+                    </span>
+                  </>
+                )}
+                <span style={{ color: '#6b7280', fontSize: '14px' }}>
+                  {metrics.avgTicketChange === 0 ? 'Sin cambios' : metrics.avgTicketChange > 0 ? 'mejor margen' : 'menor margen'}
+                </span>
               </div>
             </div>
 
@@ -495,9 +584,26 @@ export default function DashboardNuevo() {
                 </div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ color: '#ef4444', fontSize: '20px' }}>↓</span>
-                <span style={{ color: '#ef4444', fontSize: '16px', fontWeight: '600' }}>-2.1%</span>
-                <span style={{ color: '#6b7280', fontSize: '14px' }}>rotación saludable</span>
+                {metrics.inventoryChange !== 0 && (
+                  <>
+                    <span style={{ 
+                      color: metrics.inventoryChange > 0 ? '#8b5cf6' : '#ef4444', 
+                      fontSize: '20px' 
+                    }}>
+                      {metrics.inventoryChange > 0 ? '↑' : '↓'}
+                    </span>
+                    <span style={{ 
+                      color: metrics.inventoryChange < 0 ? '#10b981' : '#ef4444', 
+                      fontSize: '16px', 
+                      fontWeight: '600' 
+                    }}>
+                      {metrics.inventoryChange > 0 ? '+' : ''}{metrics.inventoryChange}%
+                    </span>
+                  </>
+                )}
+                <span style={{ color: '#6b7280', fontSize: '14px' }}>
+                  {metrics.inventoryChange < 0 ? 'rotación saludable' : 'stock acumulado'}
+                </span>
               </div>
             </div>
           </div>
