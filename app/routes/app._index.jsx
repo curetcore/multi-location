@@ -16,6 +16,20 @@ export const loader = async ({ request }) => {
             primaryDomain {
               url
             }
+            brand {
+              logo {
+                image {
+                  url
+                  altText
+                }
+              }
+              squareLogo {
+                image {
+                  url
+                  altText
+                }
+              }
+            }
           }
         }
       `
@@ -24,10 +38,13 @@ export const loader = async ({ request }) => {
     const shopData = await shopResponse.json();
     const shop = shopData.data?.shop;
     
-    // Por ahora usar el dominio de la tienda para construir una URL al logo
-    // En producción esto se puede configurar desde la página de configuración
-    const shopDomain = shop?.primaryDomain?.url || '';
-    const shopLogo = null; // Se configurará manualmente más adelante
+    // Obtener logo de la marca si está disponible
+    let shopLogo = null;
+    if (shop?.brand?.logo?.image?.url) {
+      shopLogo = shop.brand.logo.image.url;
+    } else if (shop?.brand?.squareLogo?.image?.url) {
+      shopLogo = shop.brand.squareLogo.image.url;
+    }
     
     // 2. Obtener todas las ubicaciones
     const locationsResponse = await admin.graphql(
@@ -252,19 +269,16 @@ export default function DashboardNuevo() {
                 <div style={{
                   height: '50px',
                   width: '50px',
-                  background: 'rgba(255,255,255,0.1)',
+                  background: 'rgba(255,255,255,0.9)',
                   borderRadius: '8px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  border: '1px solid rgba(255,255,255,0.2)'
+                  fontSize: '24px',
+                  fontWeight: '700',
+                  color: '#1e293b'
                 }}>
-                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M19 3H5C3.9 3 3 3.9 3 5V19C3 20.1 3.9 21 5 21H19C20.1 21 21 20.1 21 19V5C21 3.9 20.1 3 19 3ZM19 19H5V5H19V19Z" fill="white" opacity="0.8"/>
-                    <path d="M7.5 13C8.88 13 10 11.88 10 10.5C10 9.12 8.88 8 7.5 8C6.12 8 5 9.12 5 10.5C5 11.88 6.12 13 7.5 13Z" fill="white" opacity="0.8"/>
-                    <path d="M16.5 11C17.33 11 18 10.33 18 9.5C18 8.67 17.33 8 16.5 8C15.67 8 15 8.67 15 9.5C15 10.33 15.67 11 16.5 11Z" fill="white" opacity="0.8"/>
-                    <path d="M12 16.5C13.93 16.5 15.5 14.93 15.5 13C15.5 11.07 13.93 9.5 12 9.5C10.07 9.5 8.5 11.07 8.5 13C8.5 14.93 10.07 16.5 12 16.5Z" fill="white" opacity="0.8"/>
-                  </svg>
+                  {shop?.name?.charAt(0).toUpperCase() || 'S'}
                 </div>
               )}
               <h1 style={{ 
