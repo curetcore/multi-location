@@ -98,11 +98,19 @@ export const loader = async ({ request }) => {
           products(first: 100) {
             edges {
               node {
+                id
+                title
                 variants(first: 10) {
                   edges {
                     node {
+                      id
+                      title
                       price
                       inventoryItem {
+                        id
+                        unitCost {
+                          amount
+                        }
                         inventoryLevels(first: 10) {
                           edges {
                             node {
@@ -237,9 +245,63 @@ export const loader = async ({ request }) => {
     // Para el inventario, asumimos una rotación saludable del 2% mensual
     const inventoryChange = -2.0;
     
+    // Procesar datos para la tabla de productos
+    const productTableData = {};
+    
+    products.forEach(product => {
+      const productId = product.node.id;
+      const productTitle = product.node.title;
+      
+      if (!productTableData[productId]) {
+        productTableData[productId] = {
+          id: productId,
+          title: productTitle,
+          totalQuantity: 0,
+          totalInvestment: 0,
+          locationData: {}
+        };
+      }
+      
+      product.node.variants.edges.forEach(variant => {
+        const price = parseFloat(variant.node.price || 0);
+        const unitCost = parseFloat(variant.node.inventoryItem?.unitCost?.amount || price * 0.4); // Si no hay costo, usar 40% del precio
+        
+        variant.node.inventoryItem?.inventoryLevels?.edges?.forEach(level => {
+          const availableQty = level.node.quantities?.find(q => q.name === 'available');
+          const locationId = level.node.location?.id;
+          const locationName = level.node.location?.name || 'Sin ubicación';
+          
+          if (availableQty && availableQty.quantity > 0) {
+            const quantity = availableQty.quantity;
+            
+            // Actualizar totales del producto
+            productTableData[productId].totalQuantity += quantity;
+            productTableData[productId].totalInvestment += quantity * unitCost;
+            
+            // Actualizar datos por ubicación
+            if (!productTableData[productId].locationData[locationId]) {
+              productTableData[productId].locationData[locationId] = {
+                id: locationId,
+                name: locationName,
+                quantity: 0,
+                investment: 0
+              };
+            }
+            
+            productTableData[productId].locationData[locationId].quantity += quantity;
+            productTableData[productId].locationData[locationId].investment += quantity * unitCost;
+          }
+        });
+      });
+    });
+    
+    // Convertir a array y filtrar productos sin inventario
+    const productsList = Object.values(productTableData).filter(p => p.totalQuantity > 0);
+    
     return {
       shop,
       locations,
+      productsList,
       metrics: {
         totalSales: Math.round(totalSales),
         totalOrders,
@@ -290,7 +352,7 @@ export const loader = async ({ request }) => {
 };
 
 export default function DashboardNuevo() {
-  const { shop, locations, metrics, todayMetrics, inventoryByLocation, currentPeriod, lastUpdate } = useLoaderData();
+  const { shop, locations, metrics, todayMetrics, inventoryByLocation, currentPeriod, lastUpdate, productsList } = useLoaderData();
   const navigate = useNavigate();
   const [selectedPeriod, setSelectedPeriod] = useState(currentPeriod || '30d');
   
@@ -766,6 +828,208 @@ export default function DashboardNuevo() {
           )}
         </div>
 
+        {/* TABLA DE PRODUCTOS POR SUCURSAL */}
+        <div style={{ marginBottom: '30px' }}>
+          <h2 style={{ 
+            fontSize: '16px', 
+            fontWeight: '600', 
+            marginBottom: '20px',
+            color: '#1a1a1a',
+            textTransform: 'uppercase',
+            letterSpacing: '1px'
+          }}>
+            INVENTARIO DE PRODUCTOS POR SUCURSAL
+          </h2>
+          
+          <div style={{
+            background: 'white',
+            borderRadius: '12px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+            overflow: 'hidden'
+          }}>
+            <div style={{
+              maxHeight: '500px',
+              overflowY: 'auto',
+              overflowX: 'auto'
+            }}>
+              <table style={{
+                width: '100%',
+                borderCollapse: 'collapse',
+                fontSize: '14px'
+              }}>
+                <thead style={{
+                  position: 'sticky',
+                  top: 0,
+                  background: '#f8f9fa',
+                  borderBottom: '2px solid #e5e7eb',
+                  zIndex: 10
+                }}>
+                  <tr>
+                    <th style={{
+                      padding: '16px',
+                      textAlign: 'left',
+                      fontWeight: '600',
+                      color: '#334155',
+                      minWidth: '200px',
+                      position: 'sticky',
+                      left: 0,
+                      background: '#f8f9fa'
+                    }}>
+                      PRODUCTO
+                    </th>
+                    <th style={{
+                      padding: '16px',
+                      textAlign: 'right',
+                      fontWeight: '600',
+                      color: '#334155',
+                      minWidth: '100px'
+                    }}>
+                      CANT. TOTAL
+                    </th>
+                    <th style={{
+                      padding: '16px',
+                      textAlign: 'right',
+                      fontWeight: '600',
+                      color: '#334155',
+                      minWidth: '120px'
+                    }}>
+                      INVERSIÓN TOTAL
+                    </th>
+                    {locations.slice(0, 8).map(location => (
+                      <th key={location.node.id} style={{
+                        padding: '16px',
+                        textAlign: 'center',
+                        fontWeight: '600',
+                        color: '#334155',
+                        minWidth: '150px',
+                        borderLeft: '1px solid #e5e7eb'
+                      }}>
+                        {location.node.name.toUpperCase()}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {productsList && productsList.map((product, index) => (
+                    <tr key={product.id} style={{
+                      borderBottom: '1px solid #f0f0f0',
+                      transition: 'background 0.2s ease'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = '#f8f9fa'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = 'white'}>
+                      <td style={{
+                        padding: '16px',
+                        fontWeight: '500',
+                        color: '#1a1a1a',
+                        position: 'sticky',
+                        left: 0,
+                        background: 'inherit'
+                      }}>
+                        {product.title}
+                      </td>
+                      <td style={{
+                        padding: '16px',
+                        textAlign: 'right',
+                        color: '#334155',
+                        fontWeight: '600'
+                      }}>
+                        {product.totalQuantity.toLocaleString()}
+                      </td>
+                      <td style={{
+                        padding: '16px',
+                        textAlign: 'right',
+                        color: '#334155',
+                        fontWeight: '600'
+                      }}>
+                        ${Math.round(product.totalInvestment).toLocaleString()}
+                      </td>
+                      {locations.slice(0, 8).map(location => {
+                        const locationData = product.locationData[location.node.id];
+                        return (
+                          <td key={location.node.id} style={{
+                            padding: '16px',
+                            textAlign: 'center',
+                            color: '#6b7280',
+                            borderLeft: '1px solid #f0f0f0'
+                          }}>
+                            {locationData ? (
+                              <div>
+                                <div style={{ fontWeight: '600', color: '#334155' }}>
+                                  {locationData.quantity}
+                                </div>
+                                <div style={{ fontSize: '12px', color: '#6b7280' }}>
+                                  ${Math.round(locationData.investment).toLocaleString()}
+                                </div>
+                              </div>
+                            ) : (
+                              <span style={{ color: '#d1d5db' }}>-</span>
+                            )}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                  {/* Fila de totales */}
+                  <tr style={{
+                    borderTop: '2px solid #e5e7eb',
+                    background: '#f8f9fa',
+                    fontWeight: '600'
+                  }}>
+                    <td style={{
+                      padding: '16px',
+                      color: '#1a1a1a',
+                      position: 'sticky',
+                      left: 0,
+                      background: '#f8f9fa'
+                    }}>
+                      TOTALES
+                    </td>
+                    <td style={{
+                      padding: '16px',
+                      textAlign: 'right',
+                      color: '#1a1a1a'
+                    }}>
+                      {productsList?.reduce((sum, p) => sum + p.totalQuantity, 0).toLocaleString() || '0'}
+                    </td>
+                    <td style={{
+                      padding: '16px',
+                      textAlign: 'right',
+                      color: '#1a1a1a'
+                    }}>
+                      ${productsList?.reduce((sum, p) => sum + Math.round(p.totalInvestment), 0).toLocaleString() || '0'}
+                    </td>
+                    {locations.slice(0, 8).map(location => {
+                      const locationTotal = productsList?.reduce((sum, product) => {
+                        const locationData = product.locationData[location.node.id];
+                        return sum + (locationData ? locationData.quantity : 0);
+                      }, 0) || 0;
+                      const locationInvestment = productsList?.reduce((sum, product) => {
+                        const locationData = product.locationData[location.node.id];
+                        return sum + (locationData ? Math.round(locationData.investment) : 0);
+                      }, 0) || 0;
+                      
+                      return (
+                        <td key={location.node.id} style={{
+                          padding: '16px',
+                          textAlign: 'center',
+                          color: '#1a1a1a',
+                          borderLeft: '1px solid #e5e7eb'
+                        }}>
+                          <div>
+                            <div>{locationTotal.toLocaleString()}</div>
+                            <div style={{ fontSize: '12px', color: '#6b7280' }}>
+                              ${locationInvestment.toLocaleString()}
+                            </div>
+                          </div>
+                        </td>
+                      );
+                    })}
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
 
       </div>
     </div>
