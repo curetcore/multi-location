@@ -352,14 +352,14 @@ export default function DashboardNuevo() {
             Métricas Clave
           </h2>
           
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px' }}>
             {/* KPI: Ventas del Período */}
             <div style={{
               background: 'white',
               borderRadius: '12px',
               padding: '25px',
               boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
-              borderLeft: '4px solid #10b981',
+              border: 'none',
               transition: 'transform 0.2s ease, box-shadow 0.2s ease',
               cursor: 'pointer'
             }}
@@ -388,7 +388,7 @@ export default function DashboardNuevo() {
                   justifyContent: 'center'
                 }}>
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1.41 16.09V20h-2.67v-1.93c-1.71-.36-3.16-1.46-3.27-3.4h1.96c.1.93.66 1.64 2.08 1.64 1.51 0 2.1-.63 2.1-1.51 0-.83-.44-1.36-2.23-1.86-2.09-.59-3.43-1.42-3.43-3.21 0-1.51 1.22-2.48 2.94-2.81V5h2.67v1.95c1.44.32 2.51 1.23 2.66 2.95h-1.96c-.09-.82-.63-1.45-1.65-1.45-1.13 0-1.76.55-1.76 1.4 0 .8.6 1.22 2.17 1.7 1.93.53 3.38 1.28 3.38 3.27.02 1.65-1.21 2.83-3.19 3.27z" fill="#4ade80"/>
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1.41 16.09V20h-2.67v-1.93c-1.71-.36-3.16-1.46-3.27-3.4h1.96c.1.93.66 1.64 2.08 1.64 1.51 0 2.1-.63 2.1-1.51 0-.83-.44-1.36-2.23-1.86-2.09-.59-3.43-1.42-3.43-3.21 0-1.51 1.22-2.48 2.94-2.81V5h2.67v1.95c1.44.32 2.51 1.23 2.66 2.95h-1.96c-.09-.82-.63-1.45-1.65-1.45-1.13 0-1.76.55-1.76 1.4 0 .8.6 1.22 2.17 1.7 1.93.53 3.38 1.28 3.38 3.27.02 1.65-1.21 2.83-3.19 3.27z" fill="#475569"/>
                   </svg>
                 </div>
               </div>
@@ -396,13 +396,13 @@ export default function DashboardNuevo() {
                 {metrics.salesChange !== 0 && (
                   <>
                     <span style={{ 
-                      color: metrics.salesChange > 0 ? '#10b981' : '#ef4444', 
+                      color: metrics.salesChange > 0 ? '#334155' : '#ef4444', 
                       fontSize: '20px' 
                     }}>
                       {metrics.salesChange > 0 ? '↑' : '↓'}
                     </span>
                     <span style={{ 
-                      color: metrics.salesChange > 0 ? '#10b981' : '#ef4444', 
+                      color: metrics.salesChange > 0 ? '#334155' : '#ef4444', 
                       fontSize: '16px', 
                       fontWeight: '600' 
                     }}>
@@ -422,7 +422,7 @@ export default function DashboardNuevo() {
               borderRadius: '12px',
               padding: '25px',
               boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
-              borderLeft: '4px solid #3b82f6',
+              border: 'none',
               transition: 'transform 0.2s ease, box-shadow 0.2s ease',
               cursor: 'pointer'
             }}
@@ -451,8 +451,8 @@ export default function DashboardNuevo() {
                   justifyContent: 'center'
                 }}>
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M20 8h-3V4H3c-1.1 0-2 .9-2 2v11h2c0 1.66 1.34 3 3 3s3-1.34 3-3h6c0 1.66 1.34 3 3 3s3-1.34 3-3h2v-5l-3-4zM6 18.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm13.5-9l1.96 2.5H17V9.5h2.5zm-.5 9c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z" fill="#3b82f6"/>
-                    <path d="M8 12h6v2H8z" fill="#3b82f6"/>
+                    <path d="M20 8h-3V4H3c-1.1 0-2 .9-2 2v11h2c0 1.66 1.34 3 3 3s3-1.34 3-3h6c0 1.66 1.34 3 3 3s3-1.34 3-3h2v-5l-3-4zM6 18.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm13.5-9l1.96 2.5H17V9.5h2.5zm-.5 9c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z" fill="#475569"/>
+                    <path d="M8 12h6v2H8z" fill="#475569"/>
                   </svg>
                 </div>
               </div>
@@ -460,13 +460,13 @@ export default function DashboardNuevo() {
                 {metrics.ordersChange !== 0 && (
                   <>
                     <span style={{ 
-                      color: metrics.ordersChange > 0 ? '#3b82f6' : '#ef4444', 
+                      color: metrics.ordersChange > 0 ? '#334155' : '#ef4444', 
                       fontSize: '20px' 
                     }}>
                       {metrics.ordersChange > 0 ? '↑' : '↓'}
                     </span>
                     <span style={{ 
-                      color: metrics.ordersChange > 0 ? '#3b82f6' : '#ef4444', 
+                      color: metrics.ordersChange > 0 ? '#334155' : '#ef4444', 
                       fontSize: '16px', 
                       fontWeight: '600' 
                     }}>
@@ -486,7 +486,7 @@ export default function DashboardNuevo() {
               borderRadius: '12px',
               padding: '25px',
               boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
-              borderLeft: '4px solid #f59e0b',
+              border: 'none',
               transition: 'transform 0.2s ease, box-shadow 0.2s ease',
               cursor: 'pointer'
             }}
@@ -515,7 +515,7 @@ export default function DashboardNuevo() {
                   justifyContent: 'center'
                 }}>
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z" fill="#f59e0b"/>
+                    <path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z" fill="#475569"/>
                   </svg>
                 </div>
               </div>
@@ -523,13 +523,13 @@ export default function DashboardNuevo() {
                 {metrics.avgTicketChange !== 0 && (
                   <>
                     <span style={{ 
-                      color: metrics.avgTicketChange > 0 ? '#f59e0b' : '#ef4444', 
+                      color: metrics.avgTicketChange > 0 ? '#334155' : '#ef4444', 
                       fontSize: '20px' 
                     }}>
                       {metrics.avgTicketChange > 0 ? '↑' : '↓'}
                     </span>
                     <span style={{ 
-                      color: metrics.avgTicketChange > 0 ? '#f59e0b' : '#ef4444', 
+                      color: metrics.avgTicketChange > 0 ? '#334155' : '#ef4444', 
                       fontSize: '16px', 
                       fontWeight: '600' 
                     }}>
@@ -549,7 +549,7 @@ export default function DashboardNuevo() {
               borderRadius: '12px',
               padding: '25px',
               boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
-              borderLeft: '4px solid #8b5cf6',
+              border: 'none',
               transition: 'transform 0.2s ease, box-shadow 0.2s ease',
               cursor: 'pointer'
             }}
@@ -578,8 +578,8 @@ export default function DashboardNuevo() {
                   justifyContent: 'center'
                 }}>
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z" fill="#8b5cf6"/>
-                    <path d="M3 21h18v-2H3v2z" fill="#8b5cf6"/>
+                    <path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z" fill="#475569"/>
+                    <path d="M3 21h18v-2H3v2z" fill="#475569"/>
                   </svg>
                 </div>
               </div>
@@ -587,13 +587,13 @@ export default function DashboardNuevo() {
                 {metrics.inventoryChange !== 0 && (
                   <>
                     <span style={{ 
-                      color: metrics.inventoryChange > 0 ? '#8b5cf6' : '#ef4444', 
+                      color: metrics.inventoryChange > 0 ? '#334155' : '#ef4444', 
                       fontSize: '20px' 
                     }}>
                       {metrics.inventoryChange > 0 ? '↑' : '↓'}
                     </span>
                     <span style={{ 
-                      color: metrics.inventoryChange < 0 ? '#10b981' : '#ef4444', 
+                      color: metrics.inventoryChange < 0 ? '#334155' : '#ef4444', 
                       fontSize: '16px', 
                       fontWeight: '600' 
                     }}>
