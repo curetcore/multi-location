@@ -765,35 +765,6 @@ export default function DashboardNuevo() {
                 </p>
               </div>
             </div>
-            <div style={{
-              background: '#f9fafb',
-              borderRadius: '12px',
-              padding: '16px 20px',
-              border: '1px solid #e5e7eb',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '8px'
-            }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="12" cy="12" r="10" stroke="#6b7280" strokeWidth="2"/>
-                <polyline points="12 6 12 12 16 14" stroke="#6b7280" strokeWidth="2" strokeLinecap="round"/>
-              </svg>
-              <div>
-                <div style={{ 
-                  fontSize: '11px', 
-                  textTransform: 'uppercase',
-                  color: '#6b7280',
-                  fontWeight: '500',
-                  letterSpacing: '0.05em'
-                }}>
-                  Actualizado
-                </div>
-                <div style={{ fontSize: '14px', fontWeight: '600', color: '#111827' }}>
-                  {new Date(lastUpdate).toLocaleTimeString('es-DO', { hour: '2-digit', minute: '2-digit' })}
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </div>
