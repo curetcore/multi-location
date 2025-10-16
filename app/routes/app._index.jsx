@@ -117,6 +117,7 @@ export const loader = async ({ request }) => {
                     node {
                       id
                       title
+                      sku
                       price
                       inventoryItem {
                         id
@@ -268,6 +269,7 @@ export const loader = async ({ request }) => {
         productTableData[productId] = {
           id: productId,
           title: productTitle,
+          sku: null,
           totalQuantity: 0,
           totalInvestment: 0,
           locationData: {}
@@ -277,6 +279,12 @@ export const loader = async ({ request }) => {
       product.node.variants.edges.forEach(variant => {
         const price = parseFloat(variant.node.price || 0);
         const unitCost = parseFloat(variant.node.inventoryItem?.unitCost?.amount || price * 0.4); // Si no hay costo, usar 40% del precio
+        const sku = variant.node.sku || '';
+        
+        // Guardar el SKU del primer variante con inventario
+        if (!productTableData[productId].sku && sku) {
+          productTableData[productId].sku = sku;
+        }
         
         variant.node.inventoryItem?.inventoryLevels?.edges?.forEach(level => {
           const availableQty = level.node.quantities?.find(q => q.name === 'available');
@@ -787,14 +795,31 @@ export default function DashboardNuevo() {
                     }}>
                       <td style={{
                         padding: '14px 16px',
-                        fontWeight: '500',
-                        color: '#111827',
                         position: 'sticky',
                         left: 0,
                         background: 'inherit',
                         borderBottom: '1px solid #e5e7eb'
                       }}>
-                        <div style={{ lineHeight: '1.5' }}>{product.title}</div>
+                        <div>
+                          {product.sku && (
+                            <div style={{ 
+                              fontSize: '14px',
+                              fontWeight: '600',
+                              color: '#111827',
+                              marginBottom: '2px'
+                            }}>
+                              {product.sku}
+                            </div>
+                          )}
+                          <div style={{ 
+                            fontSize: '12px',
+                            fontWeight: '400',
+                            color: '#6b7280',
+                            lineHeight: '1.4'
+                          }}>
+                            {product.title}
+                          </div>
+                        </div>
                       </td>
                       <td style={{
                         padding: '14px 16px',
