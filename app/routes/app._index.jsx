@@ -80,11 +80,6 @@ export const loader = async ({ request }) => {
                   id
                   name
                 }
-                staffMember {
-                  id
-                  displayName
-                  email
-                }
                 lineItems(first: 50) {
                   edges {
                     node {
@@ -333,9 +328,9 @@ export const loader = async ({ request }) => {
       };
     });
     
-    // Calcular top productos globales y métricas de empleados
+    // Calcular top productos globales
     const globalTopProducts = {};
-    const employeeMetrics = {};
+    // const employeeMetrics = {}; // DESHABILITADO - staffMember no disponible
     
     // Procesar órdenes para calcular métricas por ubicación, productos globales y empleados
     currentPeriodOrders.forEach(order => {
@@ -343,31 +338,8 @@ export const loader = async ({ request }) => {
       const locationName = order.node.physicalLocation?.name || 'Online';
       const orderAmount = parseFloat(order.node.currentTotalPriceSet?.shopMoney?.amount || 0);
       
-      // Procesar métricas de empleado con staffMember
-      const staffMember = order.node.staffMember;
-      const employeeId = staffMember?.id || 'online';
-      const employeeName = staffMember?.displayName || 'Venta Online';
-      const employeeEmail = staffMember?.email || '';
-      
-      if (!employeeMetrics[employeeId]) {
-        employeeMetrics[employeeId] = {
-          id: employeeId,
-          name: employeeName,
-          email: employeeEmail,
-          orders: 0,
-          totalSales: 0,
-          productsCount: 0,
-          commission: 0,
-          locations: new Set()
-        };
-      }
-      
-      employeeMetrics[employeeId].orders += 1;
-      employeeMetrics[employeeId].totalSales += orderAmount;
-      employeeMetrics[employeeId].commission = employeeMetrics[employeeId].totalSales * 0.01; // 1% commission
-      if (locationName) {
-        employeeMetrics[employeeId].locations.add(locationName);
-      }
+      // Procesar métricas de empleado - DESHABILITADO TEMPORALMENTE
+      // El campo staffMember requiere permisos especiales o puede no estar disponible
       
       if (locationId && locationMetrics[locationId]) {
         locationMetrics[locationId].sales += orderAmount;
@@ -379,10 +351,7 @@ export const loader = async ({ request }) => {
           const productTitle = item.node.title || 'Sin nombre';
           const productTitleClean = item.node.variant?.product?.title || productTitle;
           
-          // Contar productos para el empleado
-          if (employeeMetrics[employeeId]) {
-            employeeMetrics[employeeId].productsCount += quantity;
-          }
+          // Contar productos para el empleado - DESHABILITADO
           
           // Métricas por ubicación
           locationMetrics[locationId].unitsSold += quantity;
@@ -462,23 +431,8 @@ export const loader = async ({ request }) => {
         avgPrice: Math.round(product.avgPrice)
       }));
     
-    // Procesar y ordenar empleados por ventas totales
-    const employeesArray = Object.values(employeeMetrics).map(employee => ({
-      ...employee,
-      locations: Array.from(employee.locations),
-      locationsCount: employee.locations.size,
-      avgOrderValue: employee.orders > 0 ? Math.round(employee.totalSales / employee.orders) : 0,
-      totalSales: Math.round(employee.totalSales),
-      commission: Math.round(employee.commission * 100) / 100 // Redondear a 2 decimales
-    }));
-    
-    // Ordenar empleados por ventas totales
-    const topEmployees = employeesArray
-      .sort((a, b) => b.totalSales - a.totalSales)
-      .map((employee, index) => ({
-        ...employee,
-        rank: index + 1
-      }));
+    // Procesar y ordenar empleados por ventas totales - DESHABILITADO
+    const topEmployees = []; // Array vacío hasta que tengamos acceso a staffMember
     
     return {
       shop,
