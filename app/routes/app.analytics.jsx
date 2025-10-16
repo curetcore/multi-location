@@ -42,12 +42,18 @@ export const loader = async ({ request }) => {
       const date = new Date(today);
       date.setDate(date.getDate() - i);
       
+      // Usar datos consistentes basados en tendencia
+      // TODO: Reemplazar con datos históricos reales de la DB
+      const baseValue = 40000;
+      const dailyVariation = Math.sin(i * 0.1) * 5000; // Variación sinusoidal
+      const growthFactor = 1 + (89 - i) / 200; // Crecimiento gradual
+      
       last90Days.push({
         date: date.toISOString().split('T')[0],
-        sales: Math.round((Math.random() * 50000 + 30000) * (1 + (89-i)/100)),
-        orders: Math.round(Math.random() * 200 + 100),
-        inventory: Math.round(Math.random() * 5000 + 15000),
-        newCustomers: Math.round(Math.random() * 50 + 20)
+        sales: Math.round((baseValue + dailyVariation) * growthFactor),
+        orders: Math.round(150 + dailyVariation / 500),
+        inventory: 18000 - Math.round(i * 50), // Inventario decreciente
+        newCustomers: 35 + Math.round(dailyVariation / 1000)
       });
     }
     
@@ -55,19 +61,30 @@ export const loader = async ({ request }) => {
     const locationAnalytics = await Promise.all(
       locations.map(async ({ node: location }) => {
         // Datos simulados más complejos
+        // Datos mensuales consistentes con estacionalidad
+        // TODO: Obtener de históricos reales
+        const monthlyBase = 75000;
+        const seasonality = [0.8, 0.85, 0.95, 1.0, 1.1, 1.15, 1.2, 1.1, 1.0, 0.9, 0.95, 1.25]; // Factor por mes
+        
         const monthlySales = Array.from({ length: 12 }, (_, i) => ({
           month: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'][i],
-          sales: Math.round(Math.random() * 100000 + 50000),
-          orders: Math.round(Math.random() * 500 + 200),
-          avgTicket: Math.round(Math.random() * 200 + 100)
+          sales: Math.round(monthlyBase * seasonality[i]),
+          orders: Math.round(350 * seasonality[i]),
+          avgTicket: Math.round(monthlyBase * seasonality[i] / (350 * seasonality[i]))
         }));
         
-        const productPerformance = Array.from({ length: 10 }, (_, i) => ({
-          product: `Producto ${i + 1}`,
-          sales: Math.round(Math.random() * 50000 + 10000),
-          quantity: Math.round(Math.random() * 500 + 100),
-          margin: Math.round(Math.random() * 40 + 20)
-        }));
+        // Performance de productos con distribución realista
+        // TODO: Obtener productos reales de la tienda
+        const productPerformance = Array.from({ length: 10 }, (_, i) => {
+          const rank = i + 1;
+          const baseSales = 60000 / rank; // Distribución de Pareto
+          return {
+            product: `Producto ${rank}`,
+            sales: Math.round(baseSales),
+            quantity: Math.round(baseSales / 120),
+            margin: 30 + Math.round(10 / rank) // Mejores productos tienen mejor margen
+          };
+        });
         
         return {
           location,
@@ -75,10 +92,10 @@ export const loader = async ({ request }) => {
           productPerformance,
           metrics: {
             totalSales: monthlySales.reduce((sum, m) => sum + m.sales, 0),
-            avgMonthlyGrowth: Math.round(Math.random() * 20 - 5),
-            customerRetention: Math.round(Math.random() * 30 + 60),
-            avgOrderValue: Math.round(Math.random() * 100 + 150),
-            conversionRate: (Math.random() * 3 + 1).toFixed(2)
+            avgMonthlyGrowth: 8.5, // Crecimiento promedio fijo
+            customerRetention: 75, // Retención fija
+            avgOrderValue: 215, // Ticket promedio fijo
+            conversionRate: '2.8' // Conversión fija
           }
         };
       })

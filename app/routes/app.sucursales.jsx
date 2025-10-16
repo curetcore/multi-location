@@ -34,7 +34,7 @@ export const loader = async ({ request }) => {
     
     // Obtener métricas básicas para cada ubicación
     const locationsWithMetrics = await Promise.all(
-      locations.map(async ({ node: location }) => {
+      locations.map(async ({ node: location }, index) => {
         const inventoryResponse = await admin.graphql(
           `#graphql
             query getLocationMetrics($locationId: ID!) {
@@ -78,10 +78,11 @@ export const loader = async ({ request }) => {
             totalItems,
             totalValue,
             productCount: inventory.length,
-            // Datos simulados para demo
-            monthlySales: Math.round(Math.random() * 50000 + 10000),
-            efficiency: Math.round(Math.random() * 40 + 60),
-            staffCount: Math.round(Math.random() * 8 + 2)
+            // TODO: Reemplazar con datos reales de órdenes históricas
+            // Por ahora usamos valores consistentes basados en el inventario
+            monthlySales: Math.min(totalValue * 0.3, 50000), // 30% del valor del inventario
+            efficiency: Math.min(Math.round((totalItems / 100) * 10 + 60), 95), // Basado en cantidad de items
+            staffCount: Math.max(2, Math.round(totalItems / 500)) // 1 empleado por cada 500 items
           }
         };
       })
