@@ -13,6 +13,9 @@ export const loader = async ({ request }) => {
           shop {
             name
             currencyCode
+            primaryDomain {
+              url
+            }
           }
         }
       `
@@ -20,6 +23,11 @@ export const loader = async ({ request }) => {
     
     const shopData = await shopResponse.json();
     const shop = shopData.data?.shop;
+    
+    // Por ahora usar el dominio de la tienda para construir una URL al logo
+    // En producción esto se puede configurar desde la página de configuración
+    const shopDomain = shop?.primaryDomain?.url || '';
+    const shopLogo = null; // Se configurará manualmente más adelante
     
     // 2. Obtener todas las ubicaciones
     const locationsResponse = await admin.graphql(
@@ -172,6 +180,7 @@ export const loader = async ({ request }) => {
     
     return {
       shop,
+      shopLogo,
       locations,
       metrics: {
         totalSales: Math.round(totalSales),
@@ -195,12 +204,22 @@ export const loader = async ({ request }) => {
     console.error("Error loading dashboard data:", error);
     return {
       shop: null,
+      shopLogo: null,
       locations: [],
       metrics: {
         totalSales: 0,
         totalOrders: 0,
         avgTicket: 0,
-        totalInventory: 0
+        totalInventory: 0,
+        salesChange: 0,
+        ordersChange: 0,
+        avgTicketChange: 0,
+        inventoryChange: 0
+      },
+      debug: {
+        ordersFound: 0,
+        productsFound: 0,
+        locationsFound: 0
       },
       lastUpdate: new Date().toISOString()
     };
@@ -208,7 +227,7 @@ export const loader = async ({ request }) => {
 };
 
 export default function DashboardNuevo() {
-  const { shop, locations, metrics, debug, lastUpdate } = useLoaderData();
+  const { shop, shopLogo, locations, metrics, debug, lastUpdate } = useLoaderData();
   const navigate = useNavigate();
   
   // Estado para el período seleccionado
@@ -229,15 +248,50 @@ export default function DashboardNuevo() {
         <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '0 30px' }}>
           {/* Título principal */}
           <div style={{ marginBottom: '30px' }}>
-            <h1 style={{ 
-              color: 'white', 
-              fontSize: '42px', 
-              fontWeight: '700',
-              margin: '0 0 10px 0',
-              letterSpacing: '-1px'
-            }}>
-              Dashboard Analítico
-            </h1>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '15px' }}>
+              {shopLogo ? (
+                <img 
+                  src={shopLogo} 
+                  alt={shop?.name || 'Logo'} 
+                  style={{
+                    height: '50px',
+                    width: 'auto',
+                    maxWidth: '200px',
+                    objectFit: 'contain',
+                    background: 'white',
+                    padding: '8px',
+                    borderRadius: '8px'
+                  }}
+                />
+              ) : (
+                <div style={{
+                  height: '50px',
+                  width: '50px',
+                  background: 'rgba(255,255,255,0.1)',
+                  borderRadius: '8px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  border: '1px solid rgba(255,255,255,0.2)'
+                }}>
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M19 3H5C3.9 3 3 3.9 3 5V19C3 20.1 3.9 21 5 21H19C20.1 21 21 20.1 21 19V5C21 3.9 20.1 3 19 3ZM19 19H5V5H19V19Z" fill="white" opacity="0.8"/>
+                    <path d="M7.5 13C8.88 13 10 11.88 10 10.5C10 9.12 8.88 8 7.5 8C6.12 8 5 9.12 5 10.5C5 11.88 6.12 13 7.5 13Z" fill="white" opacity="0.8"/>
+                    <path d="M16.5 11C17.33 11 18 10.33 18 9.5C18 8.67 17.33 8 16.5 8C15.67 8 15 8.67 15 9.5C15 10.33 15.67 11 16.5 11Z" fill="white" opacity="0.8"/>
+                    <path d="M12 16.5C13.93 16.5 15.5 14.93 15.5 13C15.5 11.07 13.93 9.5 12 9.5C10.07 9.5 8.5 11.07 8.5 13C8.5 14.93 10.07 16.5 12 16.5Z" fill="white" opacity="0.8"/>
+                  </svg>
+                </div>
+              )}
+              <h1 style={{ 
+                color: 'white', 
+                fontSize: '42px', 
+                fontWeight: '700',
+                margin: '0',
+                letterSpacing: '-1px'
+              }}>
+                Dashboard Analítico
+              </h1>
+            </div>
             <p style={{ 
               color: 'rgba(255,255,255,0.9)', 
               fontSize: '18px',
