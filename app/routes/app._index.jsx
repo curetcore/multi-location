@@ -80,6 +80,11 @@ export const loader = async ({ request }) => {
                   id
                   name
                 }
+                user {
+                  id
+                  displayName
+                  email
+                }
                 lineItems(first: 50) {
                   edges {
                     node {
@@ -328,15 +333,40 @@ export const loader = async ({ request }) => {
       };
     });
     
-    // Calcular top productos globales
+    // Calcular top productos globales y métricas de empleados
     const globalTopProducts = {};
-    const productRevenue = {};
+    const employeeMetrics = {};
     
-    // Procesar órdenes para calcular métricas por ubicación y productos globales
+    // Procesar órdenes para calcular métricas por ubicación, productos globales y empleados
     currentPeriodOrders.forEach(order => {
       const locationId = order.node.physicalLocation?.id;
       const locationName = order.node.physicalLocation?.name || 'Online';
       const orderAmount = parseFloat(order.node.currentTotalPriceSet?.shopMoney?.amount || 0);
+      
+      // Procesar métricas de empleado
+      const employeeId = order.node.user?.id || 'unknown';
+      const employeeName = order.node.user?.displayName || 'Sin asignar';
+      const employeeEmail = order.node.user?.email || '';
+      
+      if (!employeeMetrics[employeeId]) {
+        employeeMetrics[employeeId] = {
+          id: employeeId,
+          name: employeeName,
+          email: employeeEmail,
+          orders: 0,
+          totalSales: 0,
+          productsCount: 0,
+          commission: 0,
+          locations: new Set()
+        };
+      }
+      
+      employeeMetrics[employeeId].orders += 1;
+      employeeMetrics[employeeId].totalSales += orderAmount;
+      employeeMetrics[employeeId].commission = employeeMetrics[employeeId].totalSales * 0.01; // 1% commission
+      if (locationName) {
+        employeeMetrics[employeeId].locations.add(locationName);
+      }
       
       if (locationId && locationMetrics[locationId]) {
         locationMetrics[locationId].sales += orderAmount;
@@ -347,6 +377,9 @@ export const loader = async ({ request }) => {
           const quantity = item.node.quantity || 0;
           const productTitle = item.node.title || 'Sin nombre';
           const productTitleClean = item.node.variant?.product?.title || productTitle;
+          
+          // Contar productos para el empleado
+          employeeMetrics[employeeId].productsCount += quantity;
           
           // Métricas por ubicación
           locationMetrics[locationId].unitsSold += quantity;
@@ -426,12 +459,31 @@ export const loader = async ({ request }) => {
         avgPrice: Math.round(product.avgPrice)
       }));
     
+    // Procesar y ordenar empleados por ventas totales
+    const employeesArray = Object.values(employeeMetrics).map(employee => ({
+      ...employee,
+      locations: Array.from(employee.locations),
+      locationsCount: employee.locations.size,
+      avgOrderValue: employee.orders > 0 ? Math.round(employee.totalSales / employee.orders) : 0,
+      totalSales: Math.round(employee.totalSales),
+      commission: Math.round(employee.commission * 100) / 100 // Redondear a 2 decimales
+    }));
+    
+    // Ordenar empleados por ventas totales
+    const topEmployees = employeesArray
+      .sort((a, b) => b.totalSales - a.totalSales)
+      .map((employee, index) => ({
+        ...employee,
+        rank: index + 1
+      }));
+    
     return {
       shop,
       locations,
       productsList,
       locationMetrics: Object.values(locationMetrics),
       top9Products,
+      topEmployees,
       metrics: {
         totalSales: Math.round(totalSales),
         totalOrders,
@@ -482,7 +534,7 @@ export const loader = async ({ request }) => {
 };
 
 export default function DashboardNuevo() {
-  const { shop, locations, metrics, todayMetrics, inventoryByLocation, currentPeriod, lastUpdate, productsList, locationMetrics, top9Products } = useLoaderData();
+  const { shop, locations, metrics, todayMetrics, inventoryByLocation, currentPeriod, lastUpdate, productsList, locationMetrics, top9Products, topEmployees } = useLoaderData();
   const navigate = useNavigate();
   const [selectedPeriod, setSelectedPeriod] = useState(currentPeriod || '30d');
   
@@ -1052,6 +1104,313 @@ export default function DashboardNuevo() {
               </div>
             )}
           </div>
+        </div>
+
+        {/* VENTAS POR EMPLEADO */}
+        <div style={{ marginBottom: '30px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+            <h2 style={{ 
+              fontSize: '16px', 
+              fontWeight: '600', 
+              margin: 0,
+              color: '#1a1a1a',
+              textTransform: 'uppercase',
+              letterSpacing: '1px'
+            }}>
+              RANKING DE VENTAS POR EMPLEADO
+            </h2>
+            <div style={{ 
+              fontSize: '14px', 
+              color: '#6b7280',
+              fontWeight: '500' 
+            }}>
+              Comisión del 1% sobre ventas
+            </div>
+          </div>
+          
+          <div style={{
+            background: 'white',
+            borderRadius: '12px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+            overflow: 'hidden'
+          }}>
+            <div style={{
+              overflowX: 'auto'
+            }}>
+              <table style={{
+                width: '100%',
+                borderCollapse: 'collapse',
+                fontSize: '14px'
+              }}>
+                <thead style={{
+                  background: '#f8f9fa',
+                  borderBottom: '2px solid #e5e7eb'
+                }}>
+                  <tr>
+                    <th style={{
+                      padding: '16px',
+                      textAlign: 'left',
+                      fontWeight: '600',
+                      color: '#334155',
+                      minWidth: '60px'
+                    }}>
+                      #
+                    </th>
+                    <th style={{
+                      padding: '16px',
+                      textAlign: 'left',
+                      fontWeight: '600',
+                      color: '#334155',
+                      minWidth: '200px'
+                    }}>
+                      EMPLEADO
+                    </th>
+                    <th style={{
+                      padding: '16px',
+                      textAlign: 'right',
+                      fontWeight: '600',
+                      color: '#334155',
+                      minWidth: '120px'
+                    }}>
+                      PRODUCTOS VENDIDOS
+                    </th>
+                    <th style={{
+                      padding: '16px',
+                      textAlign: 'right',
+                      fontWeight: '600',
+                      color: '#334155',
+                      minWidth: '100px'
+                    }}>
+                      ÓRDENES
+                    </th>
+                    <th style={{
+                      padding: '16px',
+                      textAlign: 'right',
+                      fontWeight: '600',
+                      color: '#334155',
+                      minWidth: '120px'
+                    }}>
+                      TOTAL VENDIDO
+                    </th>
+                    <th style={{
+                      padding: '16px',
+                      textAlign: 'right',
+                      fontWeight: '600',
+                      color: '#334155',
+                      minWidth: '100px'
+                    }}>
+                      TICKET PROM.
+                    </th>
+                    <th style={{
+                      padding: '16px',
+                      textAlign: 'right',
+                      fontWeight: '600',
+                      color: '#334155',
+                      minWidth: '120px'
+                    }}>
+                      COMISIÓN (1%)
+                    </th>
+                    <th style={{
+                      padding: '16px',
+                      textAlign: 'center',
+                      fontWeight: '600',
+                      color: '#334155',
+                      minWidth: '150px'
+                    }}>
+                      SUCURSALES
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {topEmployees && topEmployees.map((employee, index) => {
+                    const isTop3 = employee.rank <= 3;
+                    const rowBg = index % 2 === 0 ? 'white' : '#f8f9fa';
+                    
+                    return (
+                      <tr key={employee.id} style={{
+                        borderBottom: '1px solid #f0f0f0',
+                        transition: 'background 0.2s ease',
+                        background: rowBg
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = '#e5e7eb'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = rowBg}>
+                        <td style={{
+                          padding: '16px',
+                          fontWeight: '600',
+                          color: isTop3 ? '#334155' : '#6b7280'
+                        }}>
+                          <div style={{
+                            width: '32px',
+                            height: '32px',
+                            borderRadius: '50%',
+                            background: isTop3 ? '#334155' : '#e5e7eb',
+                            color: isTop3 ? 'white' : '#6b7280',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '14px',
+                            fontWeight: '700'
+                          }}>
+                            {employee.rank}
+                          </div>
+                        </td>
+                        <td style={{
+                          padding: '16px',
+                          fontWeight: '500',
+                          color: '#1a1a1a'
+                        }}>
+                          <div>
+                            <div style={{ fontWeight: '600', marginBottom: '2px' }}>
+                              {employee.name}
+                            </div>
+                            {employee.email && (
+                              <div style={{ fontSize: '12px', color: '#6b7280' }}>
+                                {employee.email}
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                        <td style={{
+                          padding: '16px',
+                          textAlign: 'right',
+                          color: '#334155',
+                          fontWeight: '600'
+                        }}>
+                          {employee.productsCount.toLocaleString()}
+                        </td>
+                        <td style={{
+                          padding: '16px',
+                          textAlign: 'right',
+                          color: '#334155',
+                          fontWeight: '600'
+                        }}>
+                          {employee.orders.toLocaleString()}
+                        </td>
+                        <td style={{
+                          padding: '16px',
+                          textAlign: 'right',
+                          color: '#1a1a1a',
+                          fontWeight: '700',
+                          fontSize: '16px'
+                        }}>
+                          ${employee.totalSales.toLocaleString()}
+                        </td>
+                        <td style={{
+                          padding: '16px',
+                          textAlign: 'right',
+                          color: '#334155',
+                          fontWeight: '500'
+                        }}>
+                          ${employee.avgOrderValue}
+                        </td>
+                        <td style={{
+                          padding: '16px',
+                          textAlign: 'right',
+                          fontWeight: '700',
+                          fontSize: '16px'
+                        }}>
+                          <div style={{
+                            color: '#16a34a'
+                          }}>
+                            ${employee.commission.toLocaleString()}
+                          </div>
+                        </td>
+                        <td style={{
+                          padding: '16px',
+                          textAlign: 'center',
+                          fontSize: '12px',
+                          color: '#6b7280'
+                        }}>
+                          <div style={{
+                            background: '#f3f4f6',
+                            borderRadius: '6px',
+                            padding: '6px 10px',
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            maxWidth: '150px',
+                            margin: '0 auto'
+                          }}>
+                            {employee.locationsCount} sucursal{employee.locationsCount !== 1 ? 'es' : ''}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  
+                  {/* Fila de totales */}
+                  <tr style={{
+                    borderTop: '2px solid #e5e7eb',
+                    background: '#1e293b',
+                    fontWeight: '600',
+                    color: 'white'
+                  }}>
+                    <td colSpan={2} style={{
+                      padding: '16px',
+                      color: 'white'
+                    }}>
+                      TOTALES
+                    </td>
+                    <td style={{
+                      padding: '16px',
+                      textAlign: 'right',
+                      color: 'white'
+                    }}>
+                      {topEmployees?.reduce((sum, e) => sum + e.productsCount, 0).toLocaleString() || '0'}
+                    </td>
+                    <td style={{
+                      padding: '16px',
+                      textAlign: 'right',
+                      color: 'white'
+                    }}>
+                      {topEmployees?.reduce((sum, e) => sum + e.orders, 0).toLocaleString() || '0'}
+                    </td>
+                    <td style={{
+                      padding: '16px',
+                      textAlign: 'right',
+                      color: 'white',
+                      fontSize: '18px'
+                    }}>
+                      ${topEmployees?.reduce((sum, e) => sum + e.totalSales, 0).toLocaleString() || '0'}
+                    </td>
+                    <td style={{
+                      padding: '16px',
+                      textAlign: 'right',
+                      color: 'white'
+                    }}>
+                      -
+                    </td>
+                    <td style={{
+                      padding: '16px',
+                      textAlign: 'right',
+                      color: 'white',
+                      fontSize: '18px'
+                    }}>
+                      ${topEmployees?.reduce((sum, e) => sum + e.commission, 0).toFixed(2) || '0'}
+                    </td>
+                    <td style={{
+                      padding: '16px'
+                    }}>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          
+          {(!topEmployees || topEmployees.length === 0) && (
+            <div style={{
+              background: '#f7f7f7',
+              borderRadius: '12px',
+              padding: '40px',
+              textAlign: 'center',
+              marginTop: '16px'
+            }}>
+              <p style={{ color: '#6b7280', margin: 0 }}>
+                No hay datos de ventas por empleado para el período seleccionado
+              </p>
+            </div>
+          )}
         </div>
 
         {/* MÉTRICAS CLAVE POR SUCURSAL */}
