@@ -205,9 +205,6 @@ export default function DashboardNuevo() {
   const { shop, locations, metrics, lastUpdate } = useLoaderData();
   const navigate = useNavigate();
   
-  // Estado para el período seleccionado
-  const [selectedPeriod, setSelectedPeriod] = useState('30d');
-  
   // Calcular sucursales activas
   const activeLocations = locations.filter(loc => loc.node.isActive).length;
   const totalLocations = locations.length;
@@ -241,106 +238,31 @@ export default function DashboardNuevo() {
             </p>
           </div>
 
-          {/* Controles */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px' }}>
-            {/* Estadísticas rápidas */}
-            <div style={{ display: 'flex', gap: '30px' }}>
-              <div>
-                <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '14px', margin: '0 0 5px 0' }}>Última actualización</p>
-                <p style={{ color: 'white', fontSize: '20px', fontWeight: '600', margin: 0 }}>
-                  {new Date(lastUpdate).toLocaleTimeString('es-DO', { hour: '2-digit', minute: '2-digit' })}
-                </p>
-              </div>
-              <div>
-                <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '14px', margin: '0 0 5px 0' }}>Moneda</p>
-                <p style={{ color: 'white', fontSize: '20px', fontWeight: '600', margin: 0 }}>
-                  {shop?.currencyCode || 'DOP'}
-                </p>
-              </div>
-              <div>
-                <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '14px', margin: '0 0 5px 0' }}>Estado</p>
-                <p style={{ color: '#4ade80', fontSize: '20px', fontWeight: '600', margin: 0 }}>
-                  ● Activo
-                </p>
-              </div>
+          {/* Métricas resumen en el header */}
+          <div style={{ display: 'flex', gap: '40px', alignItems: 'center', marginTop: '25px' }}>
+            <div>
+              <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '14px', margin: '0 0 5px 0' }}>Ventas Hoy</p>
+              <p style={{ color: 'white', fontSize: '28px', fontWeight: '700', margin: 0 }}>
+                ${metrics.totalSales > 0 ? Math.round(metrics.totalSales / 30).toLocaleString() : '0'}
+              </p>
             </div>
-
-            {/* Botones de acción */}
-            <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
-              <select 
-                style={{
-                  background: 'rgba(255,255,255,0.2)',
-                  color: 'white',
-                  border: '1px solid rgba(255,255,255,0.3)',
-                  padding: '10px 20px',
-                  borderRadius: '8px',
-                  fontSize: '16px',
-                  cursor: 'pointer',
-                  backdropFilter: 'blur(10px)'
-                }}
-                value={selectedPeriod}
-                onChange={(e) => setSelectedPeriod(e.target.value)}
-              >
-                <option value="7d" style={{ color: 'black' }}>Últimos 7 días</option>
-                <option value="30d" style={{ color: 'black' }}>Últimos 30 días</option>
-                <option value="90d" style={{ color: 'black' }}>Últimos 90 días</option>
-                <option value="year" style={{ color: 'black' }}>Este año</option>
-              </select>
-
-              <button
-                onClick={() => window.location.reload()}
-                style={{
-                  background: 'rgba(255,255,255,0.2)',
-                  color: 'white',
-                  border: '1px solid rgba(255,255,255,0.3)',
-                  padding: '10px 20px',
-                  borderRadius: '8px',
-                  fontSize: '16px',
-                  cursor: 'pointer',
-                  backdropFilter: 'blur(10px)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  transition: 'all 0.3s ease'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = 'rgba(255,255,255,0.3)';
-                  e.currentTarget.style.transform = 'translateY(-2px)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'rgba(255,255,255,0.2)';
-                  e.currentTarget.style.transform = 'translateY(0)';
-                }}
-              >
-                <span style={{ fontSize: '18px' }}>↻</span>
-                Actualizar
-              </button>
-
-              <button
-                onClick={() => navigate('/app/analytics')}
-                style={{
-                  background: 'white',
-                  color: '#1e293b',
-                  border: 'none',
-                  padding: '12px 30px',
-                  borderRadius: '8px',
-                  fontSize: '16px',
-                  fontWeight: '600',
-                  cursor: 'pointer',
-                  transition: 'all 0.3s ease',
-                  boxShadow: '0 4px 15px rgba(0,0,0,0.1)'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-2px)';
-                  e.currentTarget.style.boxShadow = '0 8px 25px rgba(0,0,0,0.15)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 4px 15px rgba(0,0,0,0.1)';
-                }}
-              >
-                Ver Analytics Completo →
-              </button>
+            <div style={{ width: '1px', height: '40px', background: 'rgba(255,255,255,0.2)' }} />
+            <div>
+              <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '14px', margin: '0 0 5px 0' }}>Órdenes Hoy</p>
+              <p style={{ color: 'white', fontSize: '28px', fontWeight: '700', margin: 0 }}>
+                {Math.round(metrics.totalOrders / 30)}
+              </p>
+            </div>
+            <div style={{ width: '1px', height: '40px', background: 'rgba(255,255,255,0.2)' }} />
+            <div>
+              <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '14px', margin: '0 0 5px 0' }}>Productos Activos</p>
+              <p style={{ color: 'white', fontSize: '28px', fontWeight: '700', margin: 0 }}>
+                {metrics.totalInventory > 0 ? metrics.totalInventory.toLocaleString() : '0'}
+              </p>
+            </div>
+            <div style={{ flex: 1 }} />
+            <div style={{ fontSize: '14px', color: 'rgba(255,255,255,0.7)' }}>
+              Actualizado: {new Date(lastUpdate).toLocaleTimeString('es-DO', { hour: '2-digit', minute: '2-digit' })}
             </div>
           </div>
         </div>
