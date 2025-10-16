@@ -319,7 +319,7 @@ export default function DashboardNuevo() {
               </p>
             </div>
             <div style={{ flex: 1 }} />
-            <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.7)' }}>
+            <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.7)', textAlign: 'right' }}>
               <span style={{ fontSize: '11px' }}>ACTUALIZADO</span><br />
               {new Date(lastUpdate).toLocaleTimeString('es-DO', { hour: '2-digit', minute: '2-digit' })}
             </div>
