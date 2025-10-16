@@ -749,7 +749,7 @@ export default function DashboardNuevo() {
               e.currentTarget.style.borderColor = '#e5e7eb';
               e.currentTarget.style.transform = 'translateY(0)';
             }}>
-              <p style={{ color: '#6b7280', fontSize: '12px', margin: '0 0 6px 0', fontWeight: '500', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Sucursal Líder (30 días)</p>
+              <p style={{ color: '#6b7280', fontSize: '12px', margin: '0 0 6px 0', fontWeight: '500', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Sucursal Líder</p>
               <div>
                 <p style={{ color: '#111827', fontSize: '20px', fontWeight: '700', margin: '0 0 2px 0', letterSpacing: '-0.3px' }}>
                   {locationMetrics && locationMetrics.length > 0 

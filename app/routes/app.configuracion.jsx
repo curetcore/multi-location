@@ -85,6 +85,7 @@ export default function Configuracion() {
   const [display, setDisplay] = useState(config.display || {});
   const [activeTab, setActiveTab] = useState('general');
   const [hasChanges, setHasChanges] = useState(false);
+  const [savedMessage, setSavedMessage] = useState(false);
   
   // Manejar cambios
   const handleNotificationChange = (key, value) => {
@@ -116,222 +117,372 @@ export default function Configuracion() {
       display
     });
     setHasChanges(false);
+    setSavedMessage(true);
+    setTimeout(() => setSavedMessage(false), 3000);
   };
   
   return (
-    <s-page>
+    <div style={{ background: '#f8f9fa', minHeight: '100vh', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif' }}>
       {/* Header */}
-      <s-section>
-        <s-layout>
-          <s-layout-section variant="full">
-            <s-stack gap="tight">
-              <s-stack direction="inline" alignment="space-between">
-                <div>
-                  <s-heading size="extra-large">Configuración</s-heading>
-                  <s-text subdued size="medium">
-                    Personaliza el comportamiento y apariencia de la aplicación
-                  </s-text>
+      <div style={{
+        background: 'white',
+        borderBottom: '1px solid #e5e7eb',
+        padding: '32px 0',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
+      }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 30px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <h1 style={{ 
+                color: '#111827', 
+                fontSize: '24px', 
+                fontWeight: '600',
+                margin: '0 0 8px 0',
+                letterSpacing: '-0.3px'
+              }}>
+                Configuración
+              </h1>
+              <p style={{ 
+                color: '#6b7280', 
+                fontSize: '16px',
+                margin: 0
+              }}>
+                Personaliza el comportamiento y apariencia de la aplicación
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+              {savedMessage && (
+                <div style={{
+                  padding: '8px 16px',
+                  background: '#10b981',
+                  color: 'white',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  animation: 'fadeIn 0.3s ease'
+                }}>
+                  ✓ Configuración guardada
                 </div>
-                <s-stack direction="inline" gap="tight">
-                  <s-button 
-                    variant="secondary" 
-                    disabled={!hasChanges}
-                    onClick={() => window.location.reload()}
-                  >
-                    Descartar cambios
-                  </s-button>
-                  <s-button 
-                    disabled={!hasChanges}
-                    onClick={saveConfiguration}
-                  >
-                    Guardar cambios
-                  </s-button>
-                </s-stack>
-              </s-stack>
-            </s-stack>
-          </s-layout-section>
-        </s-layout>
-      </s-section>
+              )}
+              <button 
+                style={{
+                  background: hasChanges ? 'white' : '#f3f4f6',
+                  color: hasChanges ? '#111827' : '#9ca3af',
+                  border: hasChanges ? '1px solid #d1d5db' : '1px solid #e5e7eb',
+                  padding: '10px 20px',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  cursor: hasChanges ? 'pointer' : 'not-allowed',
+                  transition: 'all 0.15s ease'
+                }}
+                disabled={!hasChanges}
+                onClick={() => window.location.reload()}
+                onMouseEnter={(e) => hasChanges && (e.currentTarget.style.background = '#f9fafb')}
+                onMouseLeave={(e) => hasChanges && (e.currentTarget.style.background = 'white')}
+              >
+                Descartar cambios
+              </button>
+              <button 
+                style={{
+                  background: hasChanges ? '#111827' : '#e5e7eb',
+                  color: 'white',
+                  border: 'none',
+                  padding: '10px 20px',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  cursor: hasChanges ? 'pointer' : 'not-allowed',
+                  transition: 'all 0.15s ease'
+                }}
+                disabled={!hasChanges}
+                onClick={saveConfiguration}
+                onMouseEnter={(e) => hasChanges && (e.currentTarget.style.background = '#1e293b')}
+                onMouseLeave={(e) => hasChanges && (e.currentTarget.style.background = '#111827')}
+              >
+                Guardar cambios
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
       
-      {/* Información de la tienda */}
-      {shop && (
-        <s-section>
-          <s-card style={{ background: '#f6f6f7' }}>
-            <s-layout>
-              <s-layout-section variant="one-half">
-                <s-stack gap="tight">
-                  <s-text subdued size="small">Tienda</s-text>
-                  <s-text emphasis="strong">{shop.name}</s-text>
-                  <s-text size="small">{shop.email}</s-text>
-                </s-stack>
-              </s-layout-section>
-              <s-layout-section variant="one-half">
-                <s-stack gap="tight" alignment="end">
-                  <s-text subdued size="small">Configuración regional</s-text>
-                  <s-text emphasis="strong">{shop.currencyCode}</s-text>
-                  <s-text size="small">{shop.timezoneAbbreviation} ({shop.billingAddress?.city}, {shop.billingAddress?.country})</s-text>
-                </s-stack>
-              </s-layout-section>
-            </s-layout>
-          </s-card>
-        </s-section>
-      )}
+      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '30px' }}>
+        {/* Información de la tienda */}
+        {shop && (
+          <div style={{
+            background: 'white',
+            borderRadius: '16px',
+            padding: '24px',
+            marginBottom: '24px',
+            border: '1px solid #e5e7eb',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
+          }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '40px' }}>
+              <div>
+                <p style={{ color: '#6b7280', fontSize: '12px', margin: '0 0 4px 0', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: '500' }}>Tienda</p>
+                <p style={{ color: '#111827', fontSize: '18px', fontWeight: '600', margin: '0 0 4px 0' }}>{shop.name}</p>
+                <p style={{ color: '#6b7280', fontSize: '14px', margin: 0 }}>{shop.email}</p>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <p style={{ color: '#6b7280', fontSize: '12px', margin: '0 0 4px 0', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: '500' }}>Configuración regional</p>
+                <p style={{ color: '#111827', fontSize: '18px', fontWeight: '600', margin: '0 0 4px 0' }}>{shop.currencyCode}</p>
+                <p style={{ color: '#6b7280', fontSize: '14px', margin: 0 }}>{shop.timezoneAbbreviation} ({shop.billingAddress?.city}, {shop.billingAddress?.country})</p>
+              </div>
+            </div>
+          </div>
+        )}
       
-      {/* Tabs de navegación */}
-      <s-section>
-        <s-button-group segmented>
-          <s-button 
-            variant={activeTab === 'general' ? 'primary' : 'tertiary'}
-            onClick={() => setActiveTab('general')}
-          >
-            General
-          </s-button>
-          <s-button 
-            variant={activeTab === 'notifications' ? 'primary' : 'tertiary'}
-            onClick={() => setActiveTab('notifications')}
-          >
-            Notificaciones
-          </s-button>
-          <s-button 
-            variant={activeTab === 'inventory' ? 'primary' : 'tertiary'}
-            onClick={() => setActiveTab('inventory')}
-          >
-            Inventario
-          </s-button>
-          <s-button 
-            variant={activeTab === 'analytics' ? 'primary' : 'tertiary'}
-            onClick={() => setActiveTab('analytics')}
-          >
-            Analytics
-          </s-button>
-          <s-button 
-            variant={activeTab === 'display' ? 'primary' : 'tertiary'}
-            onClick={() => setActiveTab('display')}
-          >
-            Visualización
-          </s-button>
-        </s-button-group>
-      </s-section>
+        {/* Tabs de navegación */}
+        <div style={{
+          background: 'white',
+          borderRadius: '12px',
+          padding: '4px',
+          marginBottom: '24px',
+          display: 'inline-flex',
+          border: '1px solid #e5e7eb'
+        }}>
+          {[
+            { id: 'general', label: 'General' },
+            { id: 'notifications', label: 'Notificaciones' },
+            { id: 'inventory', label: 'Inventario' },
+            { id: 'analytics', label: 'Analytics' },
+            { id: 'display', label: 'Visualización' }
+          ].map(tab => (
+            <button
+              key={tab.id}
+              style={{
+                background: activeTab === tab.id ? '#111827' : 'transparent',
+                color: activeTab === tab.id ? 'white' : '#6b7280',
+                border: 'none',
+                padding: '8px 20px',
+                borderRadius: '8px',
+                fontSize: '14px',
+                fontWeight: '500',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+                marginRight: '4px'
+              }}
+              onClick={() => setActiveTab(tab.id)}
+              onMouseEnter={(e) => {
+                if (activeTab !== tab.id) {
+                  e.currentTarget.style.background = '#f3f4f6';
+                  e.currentTarget.style.color = '#111827';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (activeTab !== tab.id) {
+                  e.currentTarget.style.background = 'transparent';
+                  e.currentTarget.style.color = '#6b7280';
+                }
+              }}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
       
-      {/* Contenido según tab activa */}
-      {activeTab === 'general' && (
-        <s-section>
-          <s-layout>
-            <s-layout-section variant="full">
-              <s-card>
-                <s-stack gap="base">
-                  <s-heading>Configuración General</s-heading>
-                  <s-divider />
-                  
-                  <s-stack gap="loose">
-                    <s-stack gap="tight">
-                      <s-heading size="small">Información de la aplicación</s-heading>
-                      <s-text subdued>Detalles básicos sobre la aplicación</s-text>
-                      
-                      <s-layout>
-                        <s-layout-section variant="one-half">
-                          <s-stack gap="tight">
-                            <s-text subdued size="small">Versión</s-text>
-                            <s-text emphasis="strong">1.0.0</s-text>
-                          </s-stack>
-                        </s-layout-section>
-                        <s-layout-section variant="one-half">
-                          <s-stack gap="tight">
-                            <s-text subdued size="small">Última actualización</s-text>
-                            <s-text emphasis="strong">{new Date().toLocaleDateString('es-DO')}</s-text>
-                          </s-stack>
-                        </s-layout-section>
-                      </s-layout>
-                    </s-stack>
-                    
-                    <s-divider />
-                    
-                    <s-stack gap="tight">
-                      <s-heading size="small">Zona horaria y región</s-heading>
-                      <s-text subdued>Configura tu zona horaria para reportes precisos</s-text>
-                      
-                      <s-select
-                        label="Zona horaria"
-                        options={[
-                          { label: 'América/Santo_Domingo (GMT-4)', value: 'America/Santo_Domingo' },
-                          { label: 'América/Nueva_York (GMT-5)', value: 'America/New_York' },
-                          { label: 'América/Ciudad_de_México (GMT-6)', value: 'America/Mexico_City' }
-                        ]}
-                        value="America/Santo_Domingo"
-                      />
-                    </s-stack>
-                  </s-stack>
-                </s-stack>
-              </s-card>
-            </s-layout-section>
-          </s-layout>
-        </s-section>
-      )}
+        {/* Contenido según tab activa */}
+        {activeTab === 'general' && (
+          <div style={{
+            background: 'white',
+            borderRadius: '16px',
+            padding: '32px',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+            border: '1px solid #e5e7eb'
+          }}>
+            <h2 style={{ 
+              fontSize: '20px', 
+              fontWeight: '600', 
+              margin: '0 0 8px 0',
+              color: '#111827'
+            }}>
+              Configuración General
+            </h2>
+            <div style={{ 
+              height: '1px', 
+              background: '#e5e7eb', 
+              margin: '20px 0' 
+            }} />
+            
+            <div style={{ marginBottom: '32px' }}>
+              <h3 style={{ 
+                fontSize: '16px', 
+                fontWeight: '600', 
+                margin: '0 0 8px 0',
+                color: '#111827'
+              }}>
+                Información de la aplicación
+              </h3>
+              <p style={{ color: '#6b7280', fontSize: '14px', margin: '0 0 20px 0' }}>
+                Detalles básicos sobre la aplicación
+              </p>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+                <div>
+                  <p style={{ color: '#6b7280', fontSize: '12px', margin: '0 0 4px 0', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: '500' }}>Versión</p>
+                  <p style={{ color: '#111827', fontSize: '16px', fontWeight: '600', margin: 0 }}>1.1.0</p>
+                </div>
+                <div>
+                  <p style={{ color: '#6b7280', fontSize: '12px', margin: '0 0 4px 0', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: '500' }}>Última actualización</p>
+                  <p style={{ color: '#111827', fontSize: '16px', fontWeight: '600', margin: 0 }}>{new Date().toLocaleDateString('es-DO')}</p>
+                </div>
+              </div>
+            </div>
+            
+            <div style={{ 
+              height: '1px', 
+              background: '#e5e7eb', 
+              margin: '32px 0' 
+            }} />
+            
+            <div>
+              <h3 style={{ 
+                fontSize: '16px', 
+                fontWeight: '600', 
+                margin: '0 0 8px 0',
+                color: '#111827'
+              }}>
+                Zona horaria y región
+              </h3>
+              <p style={{ color: '#6b7280', fontSize: '14px', margin: '0 0 20px 0' }}>
+                Configura tu zona horaria para reportes precisos
+              </p>
+              
+              <div style={{ maxWidth: '400px' }}>
+                <label style={{ 
+                  display: 'block', 
+                  marginBottom: '6px', 
+                  fontSize: '14px', 
+                  fontWeight: '500', 
+                  color: '#374151' 
+                }}>
+                  Zona horaria
+                </label>
+                <select
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    color: '#111827',
+                    background: 'white',
+                    cursor: 'pointer'
+                  }}
+                  value="America/Santo_Domingo"
+                >
+                  <option value="America/Santo_Domingo">América/Santo_Domingo (GMT-4)</option>
+                  <option value="America/New_York">América/Nueva_York (GMT-5)</option>
+                  <option value="America/Mexico_City">América/Ciudad_de_México (GMT-6)</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        )}
       
       {activeTab === 'notifications' && (
-        <s-section>
-          <s-layout>
-            <s-layout-section variant="full">
-              <s-card>
-                <s-stack gap="base">
-                  <s-heading>Notificaciones</s-heading>
-                  <s-text subdued>Configura cuándo y cómo recibir alertas</s-text>
-                  <s-divider />
-                  
-                  <s-stack gap="loose">
-                    <s-stack gap="tight">
-                      <s-checkbox
-                        label="Alertas de stock bajo"
-                        helpText="Recibe notificaciones cuando un producto tenga stock bajo"
-                        checked={notifications.lowStock}
-                        onChange={(checked) => handleNotificationChange('lowStock', checked)}
-                      />
-                    </s-stack>
-                    
-                    <s-stack gap="tight">
-                      <s-checkbox
-                        label="Reporte diario"
-                        helpText="Recibe un resumen diario de ventas y métricas"
-                        checked={notifications.dailyReport}
-                        onChange={(checked) => handleNotificationChange('dailyReport', checked)}
-                      />
-                    </s-stack>
-                    
-                    <s-stack gap="tight">
-                      <s-checkbox
-                        label="Reporte semanal"
-                        helpText="Recibe un análisis semanal detallado"
-                        checked={notifications.weeklyReport}
-                        onChange={(checked) => handleNotificationChange('weeklyReport', checked)}
-                      />
-                    </s-stack>
-                    
-                    <s-stack gap="tight">
-                      <s-checkbox
-                        label="Reporte mensual"
-                        helpText="Recibe un informe completo mensual"
-                        checked={notifications.monthlyReport}
-                        onChange={(checked) => handleNotificationChange('monthlyReport', checked)}
-                      />
-                    </s-stack>
-                    
-                    <s-divider />
-                    
-                    <s-stack gap="tight">
-                      <s-heading size="small">Destinatarios de email</s-heading>
-                      <s-text-field
-                        label="Emails"
-                        helpText="Separa múltiples emails con comas"
-                        value={notifications.emailRecipients?.join(', ') || ''}
-                        onChange={(value) => handleNotificationChange('emailRecipients', value.split(',').map(e => e.trim()))}
-                      />
-                    </s-stack>
-                  </s-stack>
-                </s-stack>
-              </s-card>
-            </s-layout-section>
-          </s-layout>
-        </s-section>
+        <div style={{
+          background: 'white',
+          borderRadius: '16px',
+          padding: '32px',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+          border: '1px solid #e5e7eb'
+        }}>
+          <h2 style={{ 
+            fontSize: '20px', 
+            fontWeight: '600', 
+            margin: '0 0 8px 0',
+            color: '#111827'
+          }}>
+            Notificaciones
+          </h2>
+          <p style={{ color: '#6b7280', fontSize: '14px', margin: '0 0 20px 0' }}>
+            Configura cuándo y cómo recibir alertas
+          </p>
+          <div style={{ 
+            height: '1px', 
+            background: '#e5e7eb', 
+            margin: '20px 0' 
+          }} />
+          
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            {[
+              { key: 'lowStock', label: 'Alertas de stock bajo', help: 'Recibe notificaciones cuando un producto tenga stock bajo' },
+              { key: 'dailyReport', label: 'Reporte diario', help: 'Recibe un resumen diario de ventas y métricas' },
+              { key: 'weeklyReport', label: 'Reporte semanal', help: 'Recibe un análisis semanal detallado' },
+              { key: 'monthlyReport', label: 'Reporte mensual', help: 'Recibe un informe completo mensual' }
+            ].map(item => (
+              <label key={item.key} style={{ display: 'flex', alignItems: 'flex-start', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={notifications[item.key] || false}
+                  onChange={(e) => handleNotificationChange(item.key, e.target.checked)}
+                  style={{
+                    marginRight: '12px',
+                    marginTop: '4px',
+                    width: '16px',
+                    height: '16px',
+                    cursor: 'pointer'
+                  }}
+                />
+                <div>
+                  <p style={{ margin: '0 0 4px 0', fontSize: '14px', fontWeight: '500', color: '#111827' }}>
+                    {item.label}
+                  </p>
+                  <p style={{ margin: 0, fontSize: '13px', color: '#6b7280' }}>
+                    {item.help}
+                  </p>
+                </div>
+              </label>
+            ))}
+            
+            <div style={{ 
+              height: '1px', 
+              background: '#e5e7eb', 
+              margin: '20px 0' 
+            }} />
+            
+            <div>
+              <h3 style={{ 
+                fontSize: '16px', 
+                fontWeight: '600', 
+                margin: '0 0 16px 0',
+                color: '#111827'
+              }}>
+                Destinatarios de email
+              </h3>
+              <div style={{ maxWidth: '400px' }}>
+                <label style={{ 
+                  display: 'block', 
+                  marginBottom: '6px', 
+                  fontSize: '14px', 
+                  fontWeight: '500', 
+                  color: '#374151' 
+                }}>
+                  Emails
+                </label>
+                <input
+                  type="text"
+                  value={notifications.emailRecipients?.join(', ') || ''}
+                  onChange={(e) => handleNotificationChange('emailRecipients', e.target.value.split(',').map(email => email.trim()))}
+                  placeholder="email1@ejemplo.com, email2@ejemplo.com"
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    color: '#111827'
+                  }}
+                />
+                <p style={{ margin: '6px 0 0', fontSize: '12px', color: '#6b7280' }}>
+                  Separa múltiples emails con comas
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
       
       {activeTab === 'inventory' && (
@@ -524,29 +675,33 @@ export default function Configuracion() {
         </s-section>
       )}
       
-      {/* Footer con información adicional */}
-      <s-section>
-        <s-card style={{ background: '#f6f6f7', textAlign: 'center' }}>
-          <s-stack gap="tight">
-            <s-text size="small" subdued>
-              Multi-Location Analytics v1.0.0 | Desarrollado para {shop?.name}
-            </s-text>
-            <s-stack direction="inline" gap="tight" alignment="center">
-              <s-link url="https://help.shopify.com" external>
-                Centro de ayuda
-              </s-link>
-              <s-text size="small" subdued>•</s-text>
-              <s-link url="https://shopify.dev" external>
-                Documentación API
-              </s-link>
-              <s-text size="small" subdued>•</s-text>
-              <s-link onClick={() => navigate('/app/configuracion/logs')}>
-                Ver logs
-              </s-link>
-            </s-stack>
-          </s-stack>
-        </s-card>
-      </s-section>
-    </s-page>
+        {/* Footer con información adicional */}
+        <div style={{
+          background: 'white',
+          borderRadius: '16px',
+          padding: '24px',
+          marginTop: '32px',
+          border: '1px solid #e5e7eb',
+          textAlign: 'center'
+        }}>
+          <p style={{ color: '#6b7280', fontSize: '13px', margin: '0 0 12px 0' }}>
+            Multi-Location Analytics v1.1.0 | Desarrollado para {shop?.name}
+          </p>
+          <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', alignItems: 'center' }}>
+            <a href="https://help.shopify.com" target="_blank" rel="noopener noreferrer" style={{ color: '#6b7280', fontSize: '13px', textDecoration: 'none' }}>
+              Centro de ayuda
+            </a>
+            <span style={{ color: '#d1d5db' }}>•</span>
+            <a href="https://shopify.dev" target="_blank" rel="noopener noreferrer" style={{ color: '#6b7280', fontSize: '13px', textDecoration: 'none' }}>
+              Documentación API
+            </a>
+            <span style={{ color: '#d1d5db' }}>•</span>
+            <button onClick={() => navigate('/app/configuracion/logs')} style={{ color: '#6b7280', fontSize: '13px', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+              Ver logs
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
