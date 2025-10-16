@@ -83,9 +83,6 @@ export const loader = async ({ request }) => {
     const ordersData = await ordersResponse.json();
     const orders = ordersData.data?.orders?.edges || [];
     
-    console.log('Orders found:', orders.length);
-    console.log('First order:', orders[0]);
-    
     // 4. Obtener inventario total
     const inventoryResponse = await admin.graphql(
       `#graphql
@@ -120,8 +117,6 @@ export const loader = async ({ request }) => {
     
     const inventoryData = await inventoryResponse.json();
     const products = inventoryData.data?.products?.edges || [];
-    
-    console.log('Products found:', products.length);
     
     // Calcular métricas del período actual (últimos 30 días)
     const thirtyDaysAgo = new Date();
@@ -192,11 +187,6 @@ export const loader = async ({ request }) => {
         avgTicketChange: Math.round(avgTicketChange * 10) / 10,
         inventoryChange: inventoryChange
       },
-      debug: {
-        ordersFound: orders.length,
-        productsFound: products.length,
-        locationsFound: locations.length
-      },
       lastUpdate: new Date().toISOString()
     };
     
@@ -216,18 +206,13 @@ export const loader = async ({ request }) => {
         avgTicketChange: 0,
         inventoryChange: 0
       },
-      debug: {
-        ordersFound: 0,
-        productsFound: 0,
-        locationsFound: 0
-      },
       lastUpdate: new Date().toISOString()
     };
   }
 };
 
 export default function DashboardNuevo() {
-  const { shop, shopLogo, locations, metrics, debug, lastUpdate } = useLoaderData();
+  const { shop, shopLogo, locations, metrics, lastUpdate } = useLoaderData();
   const navigate = useNavigate();
   
   // Estado para el período seleccionado
@@ -686,11 +671,6 @@ export default function DashboardNuevo() {
         }}>
           <h3 style={{ color: '#6b7280', marginBottom: '10px' }}>Próxima sección: Gráficas de rendimiento</h3>
           <p style={{ color: '#6b7280' }}>KPIs implementados. Las gráficas se agregarán a continuación.</p>
-          {debug && (
-            <p style={{ color: '#9ca3af', fontSize: '12px', marginTop: '10px' }}>
-              Debug: {debug.ordersFound} órdenes, {debug.productsFound} productos, {debug.locationsFound} ubicaciones
-            </p>
-          )}
         </div>
       </div>
     </div>
