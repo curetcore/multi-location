@@ -374,7 +374,7 @@ export default function DashboardNuevo() {
         <div style={{ marginBottom: '30px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
             <h2 style={{ 
-              fontSize: '24px', 
+              fontSize: '16px', 
               fontWeight: '600', 
               margin: 0,
               color: '#1a1a1a',
@@ -669,7 +669,7 @@ export default function DashboardNuevo() {
         {/* VALOR DE INVENTARIO POR SUCURSAL */}
         <div style={{ marginBottom: '30px' }}>
           <h2 style={{ 
-            fontSize: '24px', 
+            fontSize: '16px', 
             fontWeight: '600', 
             marginBottom: '20px',
             color: '#1a1a1a',
