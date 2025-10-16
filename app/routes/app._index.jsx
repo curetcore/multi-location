@@ -328,13 +328,17 @@ export const loader = async ({ request }) => {
       };
     });
     
-    // Procesar órdenes para calcular métricas por ubicación
+    // Calcular top productos globales
+    const globalTopProducts = {};
+    const productRevenue = {};
+    
+    // Procesar órdenes para calcular métricas por ubicación y productos globales
     currentPeriodOrders.forEach(order => {
       const locationId = order.node.physicalLocation?.id;
       const locationName = order.node.physicalLocation?.name || 'Online';
+      const orderAmount = parseFloat(order.node.currentTotalPriceSet?.shopMoney?.amount || 0);
       
       if (locationId && locationMetrics[locationId]) {
-        const orderAmount = parseFloat(order.node.currentTotalPriceSet?.shopMoney?.amount || 0);
         locationMetrics[locationId].sales += orderAmount;
         locationMetrics[locationId].orders += 1;
         
@@ -342,14 +346,35 @@ export const loader = async ({ request }) => {
         order.node.lineItems?.edges?.forEach(item => {
           const quantity = item.node.quantity || 0;
           const productTitle = item.node.title || 'Sin nombre';
+          const productTitleClean = item.node.variant?.product?.title || productTitle;
           
+          // Métricas por ubicación
           locationMetrics[locationId].unitsSold += quantity;
           
-          // Track top products
+          // Track top products por ubicación
           if (!locationMetrics[locationId].topProducts[productTitle]) {
             locationMetrics[locationId].topProducts[productTitle] = 0;
           }
           locationMetrics[locationId].topProducts[productTitle] += quantity;
+          
+          // Track top products globales
+          if (!globalTopProducts[productTitleClean]) {
+            globalTopProducts[productTitleClean] = {
+              title: productTitleClean,
+              quantity: 0,
+              revenue: 0,
+              orders: 0,
+              locations: new Set()
+            };
+          }
+          globalTopProducts[productTitleClean].quantity += quantity;
+          globalTopProducts[productTitleClean].orders += 1;
+          globalTopProducts[productTitleClean].locations.add(locationName);
+          
+          // Calcular revenue aproximado (dividiendo el total de la orden entre items)
+          const itemsInOrder = order.node.lineItems.edges.length;
+          const estimatedItemRevenue = orderAmount / itemsInOrder;
+          globalTopProducts[productTitleClean].revenue += estimatedItemRevenue;
         });
       }
     });
@@ -382,11 +407,31 @@ export const loader = async ({ request }) => {
         : 0;
     });
     
+    // Convertir top productos globales a array y ordenar por cantidad
+    const topProductsArray = Object.values(globalTopProducts).map(product => ({
+      ...product,
+      locations: Array.from(product.locations),
+      avgPrice: product.revenue / product.quantity,
+      locationsCount: product.locations.size
+    }));
+    
+    // Ordenar por cantidad vendida y tomar los top 9
+    const top9Products = topProductsArray
+      .sort((a, b) => b.quantity - a.quantity)
+      .slice(0, 9)
+      .map((product, index) => ({
+        ...product,
+        rank: index + 1,
+        revenue: Math.round(product.revenue),
+        avgPrice: Math.round(product.avgPrice)
+      }));
+    
     return {
       shop,
       locations,
       productsList,
       locationMetrics: Object.values(locationMetrics),
+      top9Products,
       metrics: {
         totalSales: Math.round(totalSales),
         totalOrders,
@@ -437,7 +482,7 @@ export const loader = async ({ request }) => {
 };
 
 export default function DashboardNuevo() {
-  const { shop, locations, metrics, todayMetrics, inventoryByLocation, currentPeriod, lastUpdate, productsList, locationMetrics } = useLoaderData();
+  const { shop, locations, metrics, todayMetrics, inventoryByLocation, currentPeriod, lastUpdate, productsList, locationMetrics, top9Products } = useLoaderData();
   const navigate = useNavigate();
   const [selectedPeriod, setSelectedPeriod] = useState(currentPeriod || '30d');
   
@@ -808,6 +853,204 @@ export default function DashboardNuevo() {
                 </tbody>
               </table>
             </div>
+          </div>
+        </div>
+
+        {/* TOP 9 PRODUCTOS MÁS VENDIDOS */}
+        <div style={{ marginBottom: '30px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+            <h2 style={{ 
+              fontSize: '16px', 
+              fontWeight: '600', 
+              margin: 0,
+              color: '#1a1a1a',
+              textTransform: 'uppercase',
+              letterSpacing: '1px'
+            }}>
+              TOP 9 PRODUCTOS MÁS VENDIDOS
+            </h2>
+            <div style={{ 
+              fontSize: '14px', 
+              color: '#6b7280',
+              fontWeight: '500' 
+            }}>
+              Período: {selectedPeriod === '7d' ? 'Últimos 7 días' : 
+                        selectedPeriod === '30d' ? 'Últimos 30 días' : 
+                        selectedPeriod === '90d' ? 'Últimos 90 días' : 
+                        'Último año'}
+            </div>
+          </div>
+          
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))',
+            gap: '16px'
+          }}>
+            {top9Products && top9Products.map((product) => {
+              const isTop3 = product.rank <= 3;
+              const performancePercent = top9Products[0]?.quantity > 0 
+                ? Math.round((product.quantity / top9Products[0].quantity) * 100) 
+                : 0;
+              
+              return (
+                <div 
+                  key={product.title}
+                  style={{
+                    background: 'white',
+                    borderRadius: '12px',
+                    padding: '20px',
+                    boxShadow: isTop3 ? '0 4px 12px rgba(0,0,0,0.1)' : '0 2px 8px rgba(0,0,0,0.05)',
+                    position: 'relative',
+                    transition: 'all 0.2s ease',
+                    cursor: 'pointer',
+                    border: isTop3 ? '2px solid #334155' : 'none'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 6px 16px rgba(0,0,0,0.15)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = isTop3 ? '0 4px 12px rgba(0,0,0,0.1)' : '0 2px 8px rgba(0,0,0,0.05)';
+                  }}
+                >
+                  {/* Ranking Badge */}
+                  <div style={{
+                    position: 'absolute',
+                    top: '-12px',
+                    left: '20px',
+                    background: isTop3 ? '#334155' : '#6b7280',
+                    color: 'white',
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '16px',
+                    fontWeight: '700',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                  }}>
+                    {product.rank}
+                  </div>
+                  
+                  {/* Producto Info */}
+                  <div style={{ marginBottom: '16px', paddingTop: '8px' }}>
+                    <h3 style={{ 
+                      fontSize: '16px', 
+                      fontWeight: '600', 
+                      margin: '0 0 8px 0',
+                      color: '#1a1a1a',
+                      lineHeight: '1.3'
+                    }}>
+                      {product.title}
+                    </h3>
+                    
+                    {/* Métricas principales */}
+                    <div style={{ 
+                      display: 'flex', 
+                      alignItems: 'baseline', 
+                      gap: '12px',
+                      marginBottom: '12px'
+                    }}>
+                      <div>
+                        <p style={{ fontSize: '24px', fontWeight: '700', margin: 0, color: '#1a1a1a' }}>
+                          {product.quantity.toLocaleString()}
+                        </p>
+                        <p style={{ fontSize: '12px', color: '#6b7280', margin: 0 }}>unidades vendidas</p>
+                      </div>
+                      <div style={{ 
+                        padding: '4px 8px',
+                        background: '#f3f4f6',
+                        borderRadius: '6px',
+                        fontSize: '13px',
+                        fontWeight: '500',
+                        color: '#334155'
+                      }}>
+                        ${product.revenue.toLocaleString()}
+                      </div>
+                    </div>
+                    
+                    {/* Métricas secundarias */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+                      <div>
+                        <p style={{ fontSize: '11px', color: '#6b7280', margin: '0 0 2px 0', textTransform: 'uppercase' }}>
+                          Precio Promedio
+                        </p>
+                        <p style={{ fontSize: '16px', fontWeight: '600', margin: 0, color: '#334155' }}>
+                          ${product.avgPrice}
+                        </p>
+                      </div>
+                      <div>
+                        <p style={{ fontSize: '11px', color: '#6b7280', margin: '0 0 2px 0', textTransform: 'uppercase' }}>
+                          Órdenes
+                        </p>
+                        <p style={{ fontSize: '16px', fontWeight: '600', margin: 0, color: '#334155' }}>
+                          {product.orders}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    {/* Barra de rendimiento */}
+                    <div style={{ marginBottom: '12px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                        <p style={{ fontSize: '11px', color: '#6b7280', margin: 0, textTransform: 'uppercase' }}>
+                          Rendimiento vs #1
+                        </p>
+                        <p style={{ fontSize: '11px', color: '#6b7280', margin: 0 }}>
+                          {performancePercent}%
+                        </p>
+                      </div>
+                      <div style={{
+                        width: '100%',
+                        height: '4px',
+                        background: '#f3f4f6',
+                        borderRadius: '2px',
+                        overflow: 'hidden'
+                      }}>
+                        <div style={{
+                          width: `${performancePercent}%`,
+                          height: '100%',
+                          background: isTop3 ? '#334155' : '#94a3b8',
+                          transition: 'width 0.3s ease'
+                        }} />
+                      </div>
+                    </div>
+                    
+                    {/* Ubicaciones */}
+                    <div style={{
+                      background: '#f8f9fa',
+                      borderRadius: '8px',
+                      padding: '10px',
+                      fontSize: '12px',
+                      color: '#6b7280'
+                    }}>
+                      <p style={{ margin: '0 0 4px 0', fontWeight: '500' }}>
+                        Disponible en {product.locationsCount} sucursales:
+                      </p>
+                      <p style={{ margin: 0, fontSize: '11px', lineHeight: '1.4' }}>
+                        {product.locations.slice(0, 3).join(', ')}
+                        {product.locations.length > 3 && ` y ${product.locations.length - 3} más`}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+            
+            {(!top9Products || top9Products.length === 0) && (
+              <div style={{
+                gridColumn: '1 / -1',
+                background: '#f7f7f7',
+                borderRadius: '12px',
+                padding: '40px',
+                textAlign: 'center'
+              }}>
+                <p style={{ color: '#6b7280', margin: 0 }}>
+                  No hay datos de productos vendidos para el período seleccionado
+                </p>
+              </div>
+            )}
           </div>
         </div>
 
