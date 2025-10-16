@@ -41,20 +41,23 @@ export const loader = async ({ request }) => {
     const locationsData = await locationsResponse.json();
     const locations = locationsData.data?.locations?.edges || [];
     
-    // 3. Obtener órdenes de los últimos 60 días para calcular métricas y tendencias
+    // 3. Obtener órdenes recientes para calcular métricas y tendencias
     const ordersResponse = await admin.graphql(
       `#graphql
         query getRecentOrders {
-          orders(first: 100, reverse: true, query: "created_at:>2024-08-01") {
+          orders(first: 250, reverse: true) {
             edges {
               node {
                 id
+                name
                 totalPriceSet {
                   shopMoney {
                     amount
+                    currencyCode
                   }
                 }
                 createdAt
+                displayFinancialStatus
                 lineItems(first: 5) {
                   edges {
                     node {
@@ -71,6 +74,9 @@ export const loader = async ({ request }) => {
     
     const ordersData = await ordersResponse.json();
     const orders = ordersData.data?.orders?.edges || [];
+    
+    console.log('Orders found:', orders.length);
+    console.log('First order:', orders[0]);
     
     // 4. Obtener inventario total
     const inventoryResponse = await admin.graphql(
@@ -106,6 +112,8 @@ export const loader = async ({ request }) => {
     
     const inventoryData = await inventoryResponse.json();
     const products = inventoryData.data?.products?.edges || [];
+    
+    console.log('Products found:', products.length);
     
     // Calcular métricas del período actual (últimos 30 días)
     const thirtyDaysAgo = new Date();
@@ -175,6 +183,11 @@ export const loader = async ({ request }) => {
         avgTicketChange: Math.round(avgTicketChange * 10) / 10,
         inventoryChange: inventoryChange
       },
+      debug: {
+        ordersFound: orders.length,
+        productsFound: products.length,
+        locationsFound: locations.length
+      },
       lastUpdate: new Date().toISOString()
     };
     
@@ -195,7 +208,7 @@ export const loader = async ({ request }) => {
 };
 
 export default function DashboardNuevo() {
-  const { shop, locations, metrics, lastUpdate } = useLoaderData();
+  const { shop, locations, metrics, debug, lastUpdate } = useLoaderData();
   const navigate = useNavigate();
   
   // Estado para el período seleccionado
@@ -375,7 +388,7 @@ export default function DashboardNuevo() {
                 <div>
                   <p style={{ fontSize: '14px', color: '#6b7280', margin: '0 0 8px 0' }}>Ventas del Período</p>
                   <p style={{ fontSize: '32px', fontWeight: '700', margin: 0, color: '#1a1a1a' }}>
-                    ${metrics.totalSales.toLocaleString()}
+                    {metrics.totalSales > 0 ? `$${metrics.totalSales.toLocaleString()}` : '$0'}
                   </p>
                 </div>
                 <div style={{
@@ -619,6 +632,11 @@ export default function DashboardNuevo() {
         }}>
           <h3 style={{ color: '#6b7280', marginBottom: '10px' }}>Próxima sección: Gráficas de rendimiento</h3>
           <p style={{ color: '#6b7280' }}>KPIs implementados. Las gráficas se agregarán a continuación.</p>
+          {debug && (
+            <p style={{ color: '#9ca3af', fontSize: '12px', marginTop: '10px' }}>
+              Debug: {debug.ordersFound} órdenes, {debug.productsFound} productos, {debug.locationsFound} ubicaciones
+            </p>
+          )}
         </div>
       </div>
     </div>
