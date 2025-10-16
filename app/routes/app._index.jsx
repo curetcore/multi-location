@@ -458,7 +458,7 @@ export default function DashboardNuevo() {
           <div style={{ marginBottom: '30px' }}>
             <h1 style={{ 
               color: 'white', 
-              fontSize: '48px', 
+              fontSize: '36px', 
               fontWeight: '700',
               margin: '0 0 10px 0',
               letterSpacing: '-1px',
@@ -500,12 +500,18 @@ export default function DashboardNuevo() {
             </div>
             <div style={{ width: '1px', height: '40px', background: 'rgba(255,255,255,0.2)' }} />
             <div>
-              <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', margin: '0 0 5px 0', textTransform: 'uppercase' }}>Inventario Total</p>
-              <p style={{ color: 'white', fontSize: '26px', fontWeight: '700', margin: 0 }}>
-                {metrics.totalInventory.toLocaleString()}
+              <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', margin: '0 0 5px 0', textTransform: 'uppercase' }}>Sucursal Líder (30 días)</p>
+              <p style={{ color: 'white', fontSize: '20px', fontWeight: '700', margin: 0 }}>
+                {locationMetrics && locationMetrics.length > 0 
+                  ? locationMetrics.reduce((top, loc) => loc.sales > top.sales ? loc : top).name
+                  : 'Sin datos'}
               </p>
               <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '14px', margin: 0 }}>
-                productos
+                ${locationMetrics && locationMetrics.length > 0 
+                  ? Math.round(locationMetrics.reduce((top, loc) => loc.sales > top.sales ? loc : top).sales).toLocaleString()
+                  : '0'} • {locationMetrics && locationMetrics.length > 0 
+                  ? locationMetrics.reduce((top, loc) => loc.sales > top.sales ? loc : top).orders
+                  : '0'} órdenes
               </p>
             </div>
             <div style={{ flex: 1 }} />
