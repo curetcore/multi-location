@@ -473,7 +473,7 @@ export default function DashboardNuevo() {
               alignItems: 'center',
               marginTop: '10px'
             }}>
-              {locations.map((location, index) => (
+              {locations.filter(loc => loc.node.isActive).map((location, index) => (
                 <div key={location.node.id} style={{ 
                   display: 'flex', 
                   alignItems: 'center', 
@@ -483,8 +483,8 @@ export default function DashboardNuevo() {
                     width: '8px',
                     height: '8px',
                     borderRadius: '50%',
-                    background: location.node.isActive ? '#10b981' : '#ef4444',
-                    boxShadow: location.node.isActive ? '0 0 8px rgba(16, 185, 129, 0.5)' : 'none'
+                    background: '#10b981',
+                    boxShadow: '0 0 8px rgba(16, 185, 129, 0.5)'
                   }} />
                   <span style={{ 
                     color: 'rgba(255,255,255,0.9)', 
