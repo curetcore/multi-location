@@ -1,16 +1,81 @@
-# Shopify App Template - React Router
+# 🏪 Multi-Location Analytics
 
-This is a template for building a [Shopify app](https://shopify.dev/docs/apps/getting-started) using [React Router](https://reactrouter.com/).  It was forked from the [Shopify Remix app template](https://github.com/Shopify/shopify-app-template-remix) and converted to React Router.
+Aplicación Shopify para análisis y gestión de inventario en múltiples sucursales.
 
-Rather than cloning this repo, follow the [Quick Start steps](https://github.com/Shopify/shopify-app-template-react-router#quick-start).
+## 🚀 Características
 
-Visit the [`shopify.dev` documentation](https://shopify.dev/docs/api/shopify-app-react-router) for more details on the React Router app package.
+- 📊 **Dashboard Analítico**: Visualización de KPIs en tiempo real
+- 🏢 **Gestión Multi-Sucursal**: Control centralizado de todas las ubicaciones
+- 📦 **Control de Inventario**: Monitoreo de stock y alertas automáticas
+- 📈 **Analytics Avanzado**: Tendencias, comparaciones y predicciones
+- ⚙️ **Configuración Flexible**: Personalización completa de la app
 
-## Upgrading from Remix
+## 🛠 Tecnologías
 
-If you have an existing Remix app that you want to upgrade to React Router, please follow the [upgrade guide](https://github.com/Shopify/shopify-app-template-react-router/wiki/Upgrading-from-Remix).  Otherwise, please follow the quick start guide below.
+- **Frontend**: React 18, TypeScript, Recharts
+- **Backend**: Remix, Shopify GraphQL API
+- **Base de Datos**: Prisma, SQLite
+- **Deployment**: Easypanel, Docker
 
-## Quick start
+## 📋 Requisitos
+
+- Node.js 20+
+- Shopify Partner Account
+- Shopify Development Store
+
+## 🔧 Instalación Local
+
+```bash
+# Clonar repositorio
+git clone https://github.com/curetcore/multi-location.git
+cd multi-location-analytics
+
+# Instalar dependencias
+npm install
+
+# Configurar variables de entorno
+cp .env.example .env
+
+# Iniciar desarrollo
+npm run dev
+```
+
+## 🌐 Deployment
+
+La aplicación está desplegada en producción en:
+- **URL**: https://shopify.curetshop.com
+- **Plataforma**: Easypanel
+
+## 📚 Documentación
+
+Ver la carpeta `/docs` para documentación completa:
+- [Documentación del Proyecto](./docs/PROYECTO-DOCUMENTACION.md)
+- [Roadmap](./docs/ROADMAP.md)
+- [Estado de Datos](./docs/DATOS-REALES-VS-MOCK.md)
+- [Changelog](./CHANGELOG.md)
+
+## 🤝 Contribuir
+
+1. Fork el proyecto
+2. Crea tu Feature Branch (`git checkout -b feature/AmazingFeature`)
+3. Commit tus cambios (`git commit -m 'Add some AmazingFeature'`)
+4. Push al Branch (`git push origin feature/AmazingFeature`)
+5. Abre un Pull Request
+
+## 📄 Licencia
+
+Proyecto privado - Todos los derechos reservados
+
+## 👥 Equipo
+
+- **Desarrollo**: Claude AI + Ronaldo Paulino
+- **Cliente**: CuretShop
+
+---
+
+*Versión 1.0.0 - Octubre 2024*
+
+# Documentación Original de Shopify
 
 ### Prerequisites
 
@@ -203,6 +268,8 @@ This is because a JWT token is expired.  If you  are consistently getting this e
 ### Using MongoDB and Prisma
 
 If you choose to use MongoDB with Prisma, there are some gotchas in Prisma's MongoDB support to be aware of. Please see the [Prisma SessionStorage README](https://www.npmjs.com/package/@shopify/shopify-app-session-storage-prisma#mongodb).
+
+---
 
 ## Resources
 
