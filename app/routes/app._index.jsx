@@ -58,6 +58,10 @@ export const loader = async ({ request }) => {
                 }
                 createdAt
                 displayFinancialStatus
+                physicalLocation {
+                  id
+                  name
+                }
                 lineItems(first: 5) {
                   edges {
                     node {
@@ -109,6 +113,38 @@ export const loader = async ({ request }) => {
     
     const inventoryData = await inventoryResponse.json();
     const products = inventoryData.data?.products?.edges || [];
+    
+    // Calcular métricas del día de hoy
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const todayOrders = orders.filter(order => {
+      const orderDate = new Date(order.node.createdAt);
+      return orderDate >= today;
+    });
+    
+    const todaySales = todayOrders.reduce((sum, order) => {
+      return sum + parseFloat(order.node.totalPriceSet?.shopMoney?.amount || 0);
+    }, 0);
+    
+    const todayOrdersCount = todayOrders.length;
+    const todayAvgTicket = todayOrdersCount > 0 ? todaySales / todayOrdersCount : 0;
+    
+    // Calcular ventas por ubicación para hoy
+    const salesByLocation = {};
+    todayOrders.forEach(order => {
+      const locationName = order.node.physicalLocation?.name || 'Online';
+      const amount = parseFloat(order.node.totalPriceSet?.shopMoney?.amount || 0);
+      salesByLocation[locationName] = (salesByLocation[locationName] || 0) + amount;
+    });
+    
+    // Encontrar la sucursal con más ventas
+    let topLocation = { name: 'Sin ventas', sales: 0 };
+    Object.entries(salesByLocation).forEach(([name, sales]) => {
+      if (sales > topLocation.sales) {
+        topLocation = { name, sales };
+      }
+    });
     
     // Calcular métricas del período actual (últimos 30 días)
     const thirtyDaysAgo = new Date();
@@ -178,6 +214,12 @@ export const loader = async ({ request }) => {
         avgTicketChange: Math.round(avgTicketChange * 10) / 10,
         inventoryChange: inventoryChange
       },
+      todayMetrics: {
+        sales: Math.round(todaySales),
+        orders: todayOrdersCount,
+        avgTicket: Math.round(todayAvgTicket),
+        topLocation: topLocation
+      },
       lastUpdate: new Date().toISOString()
     };
     
@@ -196,13 +238,19 @@ export const loader = async ({ request }) => {
         avgTicketChange: 0,
         inventoryChange: 0
       },
+      todayMetrics: {
+        sales: 0,
+        orders: 0,
+        avgTicket: 0,
+        topLocation: { name: 'Sin datos', sales: 0 }
+      },
       lastUpdate: new Date().toISOString()
     };
   }
 };
 
 export default function DashboardNuevo() {
-  const { shop, locations, metrics, lastUpdate } = useLoaderData();
+  const { shop, locations, metrics, todayMetrics, lastUpdate } = useLoaderData();
   const navigate = useNavigate();
   
   // Calcular sucursales activas
@@ -239,30 +287,41 @@ export default function DashboardNuevo() {
           </div>
 
           {/* Métricas resumen en el header */}
-          <div style={{ display: 'flex', gap: '40px', alignItems: 'center', marginTop: '25px' }}>
+          <div style={{ display: 'flex', gap: '35px', alignItems: 'center', marginTop: '25px' }}>
             <div>
-              <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '14px', margin: '0 0 5px 0' }}>Ventas Hoy</p>
-              <p style={{ color: 'white', fontSize: '28px', fontWeight: '700', margin: 0 }}>
-                ${metrics.totalSales > 0 ? Math.round(metrics.totalSales / 30).toLocaleString() : '0'}
+              <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', margin: '0 0 5px 0', textTransform: 'uppercase' }}>Ventas Hoy</p>
+              <p style={{ color: 'white', fontSize: '26px', fontWeight: '700', margin: 0 }}>
+                ${todayMetrics.sales.toLocaleString()}
               </p>
             </div>
             <div style={{ width: '1px', height: '40px', background: 'rgba(255,255,255,0.2)' }} />
             <div>
-              <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '14px', margin: '0 0 5px 0' }}>Órdenes Hoy</p>
-              <p style={{ color: 'white', fontSize: '28px', fontWeight: '700', margin: 0 }}>
-                {Math.round(metrics.totalOrders / 30)}
+              <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', margin: '0 0 5px 0', textTransform: 'uppercase' }}>Órdenes Hoy</p>
+              <p style={{ color: 'white', fontSize: '26px', fontWeight: '700', margin: 0 }}>
+                {todayMetrics.orders}
               </p>
             </div>
             <div style={{ width: '1px', height: '40px', background: 'rgba(255,255,255,0.2)' }} />
             <div>
-              <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '14px', margin: '0 0 5px 0' }}>Productos Activos</p>
-              <p style={{ color: 'white', fontSize: '28px', fontWeight: '700', margin: 0 }}>
-                {metrics.totalInventory > 0 ? metrics.totalInventory.toLocaleString() : '0'}
+              <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', margin: '0 0 5px 0', textTransform: 'uppercase' }}>Ticket Promedio Hoy</p>
+              <p style={{ color: 'white', fontSize: '26px', fontWeight: '700', margin: 0 }}>
+                ${todayMetrics.avgTicket.toLocaleString()}
+              </p>
+            </div>
+            <div style={{ width: '1px', height: '40px', background: 'rgba(255,255,255,0.2)' }} />
+            <div>
+              <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', margin: '0 0 5px 0', textTransform: 'uppercase' }}>Sucursal Líder</p>
+              <p style={{ color: 'white', fontSize: '20px', fontWeight: '700', margin: 0 }}>
+                {todayMetrics.topLocation.name}
+              </p>
+              <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '14px', margin: 0 }}>
+                ${todayMetrics.topLocation.sales.toLocaleString()}
               </p>
             </div>
             <div style={{ flex: 1 }} />
-            <div style={{ fontSize: '14px', color: 'rgba(255,255,255,0.7)' }}>
-              Actualizado: {new Date(lastUpdate).toLocaleTimeString('es-DO', { hour: '2-digit', minute: '2-digit' })}
+            <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.7)' }}>
+              <span style={{ fontSize: '11px' }}>ACTUALIZADO</span><br />
+              {new Date(lastUpdate).toLocaleTimeString('es-DO', { hour: '2-digit', minute: '2-digit' })}
             </div>
           </div>
         </div>
