@@ -17,6 +17,9 @@ export const loader = async ({ request }) => {
   };
   const days = daysMap[period] || 30;
   
+  console.log('Starting data load for Multi-Location Analytics...');
+  const startTime = Date.now();
+  
   try {
     // 1. Obtener información básica de la tienda
     const shopResponse = await admin.graphql(
@@ -54,11 +57,19 @@ export const loader = async ({ request }) => {
     const locations = locationsData.data?.locations?.edges || [];
     
     // 3. Obtener órdenes recientes para calcular métricas y tendencias
-    const ordersResponse = await admin.graphql(
-      `#graphql
-        query getRecentOrders {
-          orders(first: 500, reverse: true, query: "financial_status:paid OR financial_status:partially_paid") {
+    // Implementar paginación para obtener hasta 5000 órdenes
+    let allOrders = [];
+    let hasNextPage = true;
+    let cursor = null;
+    const maxOrders = 5000;
+    const ordersPerPage = 250;
+    
+    while (hasNextPage && allOrders.length < maxOrders) {
+      const ordersQuery = `#graphql
+        query getRecentOrders($first: Int!, $after: String, $query: String) {
+          orders(first: $first, after: $after, reverse: true, query: $query) {
             edges {
+              cursor
               node {
                 id
                 name
@@ -99,20 +110,57 @@ export const loader = async ({ request }) => {
                 }
               }
             }
+            pageInfo {
+              hasNextPage
+              endCursor
+            }
           }
         }
-      `
-    );
+      `;
+      
+      const variables = {
+        first: ordersPerPage,
+        after: cursor,
+        query: "financial_status:paid OR financial_status:partially_paid"
+      };
+      
+      const ordersResponse = await admin.graphql(ordersQuery, { variables });
+      const ordersData = await ordersResponse.json();
+      
+      if (ordersData.data?.orders?.edges) {
+        allOrders = [...allOrders, ...ordersData.data.orders.edges];
+        hasNextPage = ordersData.data.orders.pageInfo.hasNextPage;
+        cursor = ordersData.data.orders.pageInfo.endCursor;
+        
+        // Log progress
+        console.log(`Loaded ${allOrders.length} orders...`);
+        
+        // Stop if we've reached our limit
+        if (allOrders.length >= maxOrders) {
+          allOrders = allOrders.slice(0, maxOrders);
+          break;
+        }
+      } else {
+        hasNextPage = false;
+      }
+    }
     
-    const ordersData = await ordersResponse.json();
-    const orders = ordersData.data?.orders?.edges || [];
+    const orders = allOrders;
+    console.log(`Total orders loaded: ${orders.length}`);
     
-    // 4. Obtener inventario total y por ubicación
-    const inventoryResponse = await admin.graphql(
-      `#graphql
-        query getInventory {
-          products(first: 100) {
+    // 4. Obtener inventario total y por ubicación con paginación
+    let allProducts = [];
+    let hasNextProductPage = true;
+    let productCursor = null;
+    const maxProducts = 2000; // Límite razonable para productos
+    const productsPerPage = 250;
+    
+    while (hasNextProductPage && allProducts.length < maxProducts) {
+      const productsQuery = `#graphql
+        query getInventory($first: Int!, $after: String) {
+          products(first: $first, after: $after) {
             edges {
+              cursor
               node {
                 id
                 title
@@ -148,13 +196,40 @@ export const loader = async ({ request }) => {
                 }
               }
             }
+            pageInfo {
+              hasNextPage
+              endCursor
+            }
           }
         }
-      `
-    );
+      `;
+      
+      const productVariables = {
+        first: productsPerPage,
+        after: productCursor
+      };
+      
+      const inventoryResponse = await admin.graphql(productsQuery, { variables: productVariables });
+      const inventoryData = await inventoryResponse.json();
+      
+      if (inventoryData.data?.products?.edges) {
+        allProducts = [...allProducts, ...inventoryData.data.products.edges];
+        hasNextProductPage = inventoryData.data.products.pageInfo.hasNextPage;
+        productCursor = inventoryData.data.products.pageInfo.endCursor;
+        
+        console.log(`Loaded ${allProducts.length} products...`);
+        
+        if (allProducts.length >= maxProducts) {
+          allProducts = allProducts.slice(0, maxProducts);
+          break;
+        }
+      } else {
+        hasNextProductPage = false;
+      }
+    }
     
-    const inventoryData = await inventoryResponse.json();
-    const products = inventoryData.data?.products?.edges || [];
+    const products = allProducts;
+    console.log(`Total products loaded: ${products.length}`);
     
     // Calcular métricas del día de hoy
     const today = new Date();
@@ -525,6 +600,10 @@ export const loader = async ({ request }) => {
     // Contar total de productos únicos
     const totalProducts = products.length;
     
+    const endTime = Date.now();
+    console.log(`Data load completed in ${((endTime - startTime) / 1000).toFixed(2)} seconds`);
+    console.log(`Loaded ${orders.length} orders and ${products.length} products`);
+    
     return {
       shop,
       locations,
@@ -533,6 +612,9 @@ export const loader = async ({ request }) => {
       top9Products,
       topEmployees,
       totalProducts,
+      ordersLoaded: orders.length,
+      productsLoaded: products.length,
+      loadTime: ((endTime - startTime) / 1000).toFixed(2),
       metrics: {
         totalSales: Math.round(totalSales),
         totalOrders,
@@ -587,7 +669,7 @@ export const loader = async ({ request }) => {
 };
 
 export default function DashboardNuevo() {
-  const { shop, locations, metrics, todayMetrics, inventoryByLocation, currentPeriod, lastUpdate, productsList, locationMetrics, top9Products, topEmployees, totalProducts } = useLoaderData();
+  const { shop, locations, metrics, todayMetrics, inventoryByLocation, currentPeriod, lastUpdate, productsList, locationMetrics, top9Products, topEmployees, totalProducts, ordersLoaded, productsLoaded, loadTime } = useLoaderData();
   const navigate = useNavigate();
   const [selectedPeriod, setSelectedPeriod] = useState(currentPeriod || '30d');
   
@@ -2069,6 +2151,79 @@ export default function DashboardNuevo() {
           </div>
         </div>
 
+      </div>
+      
+      {/* Indicador de datos cargados */}
+      <div style={{
+        background: 'rgba(0, 0, 0, 0.05)',
+        padding: '12px 0',
+        marginTop: '40px'
+      }}>
+        <div style={{
+          maxWidth: '1400px',
+          margin: '0 auto',
+          padding: '0 30px',
+          display: 'flex',
+          justifyContent: 'center',
+          gap: '30px',
+          alignItems: 'center',
+          flexWrap: 'wrap'
+        }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            fontSize: '13px',
+            color: '#6b7280'
+          }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M9 11L12 14L22 4" stroke="#6b7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M21 12V19C21 20.1046 20.1046 21 19 21H5C3.89543 21 3 20.1046 3 19V5C3 3.89543 3.89543 3 5 3H16" stroke="#6b7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            <span><strong>{ordersLoaded?.toLocaleString() || 0}</strong> órdenes procesadas</span>
+          </div>
+          
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            fontSize: '13px',
+            color: '#6b7280'
+          }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="3" y="3" width="18" height="18" rx="2" stroke="#6b7280" strokeWidth="2"/>
+              <line x1="9" y1="9" x2="15" y2="9" stroke="#6b7280" strokeWidth="2" strokeLinecap="round"/>
+              <line x1="9" y1="15" x2="15" y2="15" stroke="#6b7280" strokeWidth="2" strokeLinecap="round"/>
+            </svg>
+            <span><strong>{productsLoaded?.toLocaleString() || 0}</strong> productos analizados</span>
+          </div>
+          
+          {loadTime && (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              fontSize: '13px',
+              color: '#6b7280'
+            }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="12" cy="12" r="10" stroke="#6b7280" strokeWidth="2"/>
+                <polyline points="12 6 12 12 16 14" stroke="#6b7280" strokeWidth="2" strokeLinecap="round"/>
+              </svg>
+              <span>Cargado en <strong>{loadTime}s</strong></span>
+            </div>
+          )}
+          
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            fontSize: '12px',
+            color: '#9ca3af'
+          }}>
+            <span>Última actualización: {new Date(lastUpdate).toLocaleTimeString('es-DO', { hour: '2-digit', minute: '2-digit' })}</span>
+          </div>
+        </div>
       </div>
     </div>
   );
