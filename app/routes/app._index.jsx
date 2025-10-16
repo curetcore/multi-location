@@ -57,7 +57,7 @@ export const loader = async ({ request }) => {
     const ordersResponse = await admin.graphql(
       `#graphql
         query getRecentOrders {
-          orders(first: 250, reverse: true) {
+          orders(first: 500, reverse: true, query: "financial_status:paid OR financial_status:partially_paid") {
             edges {
               node {
                 id
@@ -75,6 +75,7 @@ export const loader = async ({ request }) => {
                   }
                 }
                 createdAt
+                cancelledAt
                 displayFinancialStatus
                 physicalLocation {
                   id
@@ -86,7 +87,10 @@ export const loader = async ({ request }) => {
                       title
                       quantity
                       variant {
+                        id
+                        sku
                         product {
+                          id
                           title
                         }
                       }
@@ -158,11 +162,12 @@ export const loader = async ({ request }) => {
     
     const todayOrders = orders.filter(order => {
       const orderDate = new Date(order.node.createdAt);
-      return orderDate >= today;
+      const isCancelled = order.node.cancelledAt !== null;
+      return orderDate >= today && !isCancelled;
     });
     
     const todaySales = todayOrders.reduce((sum, order) => {
-      return sum + parseFloat(order.node.totalPriceSet?.shopMoney?.amount || 0);
+      return sum + parseFloat(order.node.currentTotalPriceSet?.shopMoney?.amount || 0);
     }, 0);
     
     const todayOrdersCount = todayOrders.length;
@@ -172,7 +177,7 @@ export const loader = async ({ request }) => {
     const salesByLocation = {};
     todayOrders.forEach(order => {
       const locationName = order.node.physicalLocation?.name || 'Online';
-      const amount = parseFloat(order.node.totalPriceSet?.shopMoney?.amount || 0);
+      const amount = parseFloat(order.node.currentTotalPriceSet?.shopMoney?.amount || 0);
       salesByLocation[locationName] = (salesByLocation[locationName] || 0) + amount;
     });
     
@@ -190,11 +195,12 @@ export const loader = async ({ request }) => {
     
     const currentPeriodOrders = orders.filter(order => {
       const orderDate = new Date(order.node.createdAt);
-      return orderDate >= periodStartDate;
+      const isCancelled = order.node.cancelledAt !== null;
+      return orderDate >= periodStartDate && !isCancelled;
     });
     
     const totalSales = currentPeriodOrders.reduce((sum, order) => {
-      return sum + parseFloat(order.node.totalPriceSet?.shopMoney?.amount || 0);
+      return sum + parseFloat(order.node.currentTotalPriceSet?.shopMoney?.amount || 0);
     }, 0);
     
     const totalOrders = currentPeriodOrders.length;
@@ -221,7 +227,7 @@ export const loader = async ({ request }) => {
     });
     
     const previousSales = previousPeriodOrders.reduce((sum, order) => {
-      return sum + parseFloat(order.node.totalPriceSet?.shopMoney?.amount || 0);
+      return sum + parseFloat(order.node.currentTotalPriceSet?.shopMoney?.amount || 0);
     }, 0);
     
     const previousOrders = previousPeriodOrders.length;
@@ -289,7 +295,7 @@ export const loader = async ({ request }) => {
       
       product.node.variants.edges.forEach(variant => {
         const price = parseFloat(variant.node.price || 0);
-        const unitCost = parseFloat(variant.node.inventoryItem?.unitCost?.amount || price * 0.4); // Si no hay costo, usar 40% del precio
+        const unitCost = variant.node.inventoryItem?.unitCost?.amount ? parseFloat(variant.node.inventoryItem.unitCost.amount) : null;
         const sku = variant.node.sku || '';
         
         // Guardar el SKU del primer variante con inventario
@@ -307,7 +313,7 @@ export const loader = async ({ request }) => {
             
             // Actualizar totales del producto
             productTableData[productId].totalQuantity += quantity;
-            productTableData[productId].totalInvestment += quantity * unitCost;
+            productTableData[productId].totalInvestment += unitCost ? quantity * unitCost : 0;
             
             // Actualizar datos por ubicación
             if (!productTableData[productId].locationData[locationId]) {
@@ -320,7 +326,7 @@ export const loader = async ({ request }) => {
             }
             
             productTableData[productId].locationData[locationId].quantity += quantity;
-            productTableData[productId].locationData[locationId].investment += quantity * unitCost;
+            productTableData[productId].locationData[locationId].investment += unitCost ? quantity * unitCost : 0;
           }
         });
       });
@@ -367,8 +373,9 @@ export const loader = async ({ request }) => {
         // Procesar items de la orden
         order.node.lineItems?.edges?.forEach(item => {
           const quantity = item.node.quantity || 0;
-          const productTitle = item.node.title || 'Sin nombre';
-          const productTitleClean = item.node.variant?.product?.title || productTitle;
+          const productId = item.node.variant?.product?.id || `unknown-${item.node.title}`;
+          const productTitle = item.node.variant?.product?.title || item.node.title || 'Sin nombre';
+          const sku = item.node.variant?.sku || '';
           
           // Contar productos para el empleado - DESHABILITADO
           
@@ -381,24 +388,26 @@ export const loader = async ({ request }) => {
           }
           locationMetrics[locationId].topProducts[productTitle] += quantity;
           
-          // Track top products globales
-          if (!globalTopProducts[productTitleClean]) {
-            globalTopProducts[productTitleClean] = {
-              title: productTitleClean,
+          // Track top products globales - usar ID para evitar duplicados
+          if (!globalTopProducts[productId]) {
+            globalTopProducts[productId] = {
+              id: productId,
+              title: productTitle,
+              sku: sku,
               quantity: 0,
               revenue: 0,
               orders: 0,
               locations: new Set()
             };
           }
-          globalTopProducts[productTitleClean].quantity += quantity;
-          globalTopProducts[productTitleClean].orders += 1;
-          globalTopProducts[productTitleClean].locations.add(locationName);
+          globalTopProducts[productId].quantity += quantity;
+          globalTopProducts[productId].orders += 1;
+          globalTopProducts[productId].locations.add(locationName);
           
           // Calcular revenue aproximado (dividiendo el total de la orden entre items)
           const itemsInOrder = order.node.lineItems.edges.length;
           const estimatedItemRevenue = orderAmount / itemsInOrder;
-          globalTopProducts[productTitleClean].revenue += estimatedItemRevenue;
+          globalTopProducts[productId].revenue += estimatedItemRevenue;
         });
       }
     });
@@ -448,7 +457,7 @@ export const loader = async ({ request }) => {
         rank: index + 1,
         revenue: Math.round(product.revenue),
         avgPrice: Math.round(product.avgPrice),
-        sku: productSkuMap[product.title] || ''
+        sku: product.sku || productSkuMap[product.title] || ''
       }));
     
     // Procesar datos de empleados desde las notas de las órdenes
@@ -477,7 +486,7 @@ export const loader = async ({ request }) => {
         employeeName = employees[hash % employees.length];
       }
       
-      const amount = parseFloat(order.node.totalPriceSet?.shopMoney?.amount || 0);
+      const amount = parseFloat(order.node.currentTotalPriceSet?.shopMoney?.amount || 0);
       const productsCount = order.node.lineItems.edges.reduce((sum, item) => sum + item.node.quantity, 0);
       
       if (!employeeMetrics[employeeName]) {
