@@ -66,8 +66,8 @@ export const loader = async ({ request }) => {
     
     while (hasNextPage && allOrders.length < maxOrders) {
       const ordersQuery = `#graphql
-        query getRecentOrders($first: Int!, $after: String, $query: String) {
-          orders(first: $first, after: $after, reverse: true, query: $query) {
+        query getRecentOrders($first: Int!, $after: String) {
+          orders(first: $first, after: $after, reverse: true) {
             edges {
               cursor
               node {
@@ -120,33 +120,50 @@ export const loader = async ({ request }) => {
       
       const variables = {
         first: ordersPerPage,
-        after: cursor,
-        query: "financial_status:paid OR financial_status:partially_paid"
+        after: cursor
       };
       
-      const ordersResponse = await admin.graphql(ordersQuery, { variables });
-      const ordersData = await ordersResponse.json();
-      
-      if (ordersData.data?.orders?.edges) {
-        allOrders = [...allOrders, ...ordersData.data.orders.edges];
-        hasNextPage = ordersData.data.orders.pageInfo.hasNextPage;
-        cursor = ordersData.data.orders.pageInfo.endCursor;
+      try {
+        const ordersResponse = await admin.graphql(ordersQuery, { variables });
+        const ordersData = await ordersResponse.json();
         
-        // Log progress
-        console.log(`Loaded ${allOrders.length} orders...`);
-        
-        // Stop if we've reached our limit
-        if (allOrders.length >= maxOrders) {
-          allOrders = allOrders.slice(0, maxOrders);
+        if (ordersData.errors) {
+          console.error('GraphQL errors:', ordersData.errors);
+          hasNextPage = false;
           break;
         }
-      } else {
+        
+        if (ordersData.data?.orders?.edges) {
+          allOrders = [...allOrders, ...ordersData.data.orders.edges];
+          hasNextPage = ordersData.data.orders.pageInfo.hasNextPage;
+          cursor = ordersData.data.orders.pageInfo.endCursor;
+          
+          // Log progress
+          console.log(`Loaded ${allOrders.length} orders...`);
+          
+          // Stop if we've reached our limit
+          if (allOrders.length >= maxOrders) {
+            allOrders = allOrders.slice(0, maxOrders);
+            break;
+          }
+        } else {
+          console.warn('No orders data in response');
+          hasNextPage = false;
+        }
+      } catch (error) {
+        console.error('Error loading orders:', error);
         hasNextPage = false;
+        break;
       }
     }
     
-    const orders = allOrders;
-    console.log(`Total orders loaded: ${orders.length}`);
+    // Filtrar solo órdenes pagadas después de cargarlas
+    const orders = allOrders.filter(order => {
+      const status = order.node.displayFinancialStatus;
+      return status === 'PAID' || status === 'PARTIALLY_PAID' || status === 'PENDING';
+    });
+    
+    console.log(`Total orders loaded: ${allOrders.length}, filtered to: ${orders.length}`);
     
     // 4. Obtener inventario total y por ubicación con paginación
     let allProducts = [];
@@ -209,22 +226,35 @@ export const loader = async ({ request }) => {
         after: productCursor
       };
       
-      const inventoryResponse = await admin.graphql(productsQuery, { variables: productVariables });
-      const inventoryData = await inventoryResponse.json();
-      
-      if (inventoryData.data?.products?.edges) {
-        allProducts = [...allProducts, ...inventoryData.data.products.edges];
-        hasNextProductPage = inventoryData.data.products.pageInfo.hasNextPage;
-        productCursor = inventoryData.data.products.pageInfo.endCursor;
+      try {
+        const inventoryResponse = await admin.graphql(productsQuery, { variables: productVariables });
+        const inventoryData = await inventoryResponse.json();
         
-        console.log(`Loaded ${allProducts.length} products...`);
-        
-        if (allProducts.length >= maxProducts) {
-          allProducts = allProducts.slice(0, maxProducts);
+        if (inventoryData.errors) {
+          console.error('GraphQL product errors:', inventoryData.errors);
+          hasNextProductPage = false;
           break;
         }
-      } else {
+        
+        if (inventoryData.data?.products?.edges) {
+          allProducts = [...allProducts, ...inventoryData.data.products.edges];
+          hasNextProductPage = inventoryData.data.products.pageInfo.hasNextPage;
+          productCursor = inventoryData.data.products.pageInfo.endCursor;
+          
+          console.log(`Loaded ${allProducts.length} products...`);
+          
+          if (allProducts.length >= maxProducts) {
+            allProducts = allProducts.slice(0, maxProducts);
+            break;
+          }
+        } else {
+          console.warn('No products data in response');
+          hasNextProductPage = false;
+        }
+      } catch (error) {
+        console.error('Error loading products:', error);
         hasNextProductPage = false;
+        break;
       }
     }
     
@@ -638,6 +668,7 @@ export const loader = async ({ request }) => {
     
   } catch (error) {
     console.error("Error loading dashboard data:", error);
+    const endTime = Date.now();
     return {
       shop: null,
       locations: [],
@@ -645,6 +676,10 @@ export const loader = async ({ request }) => {
       locationMetrics: [],
       top9Products: [],
       topEmployees: [],
+      totalProducts: 0,
+      ordersLoaded: 0,
+      productsLoaded: 0,
+      loadTime: ((endTime - startTime) / 1000).toFixed(2),
       metrics: {
         totalSales: 0,
         totalOrders: 0,
@@ -674,8 +709,8 @@ export default function DashboardNuevo() {
   const [selectedPeriod, setSelectedPeriod] = useState(currentPeriod || '30d');
   
   // Calcular sucursales activas
-  const activeLocations = locations.filter(loc => loc.node.isActive).length;
-  const totalLocations = locations.length;
+  const activeLocations = locations?.filter(loc => loc.node?.isActive).length || 0;
+  const totalLocations = locations?.length || 0;
   
   return (
     <div style={{ background: '#f8f9fa', minHeight: '100vh', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif' }}>
@@ -705,7 +740,7 @@ export default function DashboardNuevo() {
               alignItems: 'center',
               marginTop: '10px'
             }}>
-              {locations.filter(loc => loc.node.isActive).map((location, index) => (
+              {locations?.filter(loc => loc.node?.isActive)?.map((location, index) => (
                 <div key={location.node.id} style={{ 
                   display: 'flex', 
                   alignItems: 'center', 
