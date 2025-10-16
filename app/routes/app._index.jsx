@@ -466,14 +466,47 @@ export default function DashboardNuevo() {
             }}>
               CENTRO DE CONTROL MULTI-TIENDA
             </h1>
-            <p style={{ 
-              color: 'rgba(255,255,255,0.9)', 
-              fontSize: '20px',
-              margin: 0,
-              fontWeight: '300'
+            <div style={{ 
+              display: 'flex', 
+              flexWrap: 'wrap',
+              gap: '20px',
+              alignItems: 'center',
+              marginTop: '10px'
             }}>
-              {shop?.name || 'Multi-Location Analytics'} • {activeLocations} sucursales activas • Últimos 30 días
-            </p>
+              {locations.map((location, index) => (
+                <div key={location.node.id} style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '8px'
+                }}>
+                  <div style={{
+                    width: '8px',
+                    height: '8px',
+                    borderRadius: '50%',
+                    background: location.node.isActive ? '#10b981' : '#ef4444',
+                    boxShadow: location.node.isActive ? '0 0 8px rgba(16, 185, 129, 0.5)' : 'none'
+                  }} />
+                  <span style={{ 
+                    color: 'rgba(255,255,255,0.9)', 
+                    fontSize: '16px',
+                    fontWeight: '400'
+                  }}>
+                    {location.node.name}
+                  </span>
+                </div>
+              ))}
+              <div style={{
+                marginLeft: '10px',
+                padding: '4px 12px',
+                background: 'rgba(255,255,255,0.1)',
+                borderRadius: '20px',
+                fontSize: '14px',
+                color: 'rgba(255,255,255,0.9)',
+                fontWeight: '500'
+              }}>
+                ({activeLocations} activas)
+              </div>
+            </div>
           </div>
 
           {/* Métricas resumen en el header */}
