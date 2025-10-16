@@ -1,10 +1,6 @@
 import { useLoaderData, useNavigate } from "react-router";
 import { authenticate } from "../shopify.server";
 import { useState, useEffect } from "react";
-import { 
-  LineChart, Line, BarChart, Bar, AreaChart, Area,
-  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer 
-} from 'recharts';
 
 export const loader = async ({ request }) => {
   const { admin } = await authenticate.admin(request);
@@ -294,61 +290,13 @@ export const loader = async ({ request }) => {
 };
 
 export default function DashboardNuevo() {
-  const { shop, locations, metrics, todayMetrics, inventoryByLocation, currentPeriod, lastUpdate, orders } = useLoaderData();
+  const { shop, locations, metrics, todayMetrics, inventoryByLocation, currentPeriod, lastUpdate } = useLoaderData();
   const navigate = useNavigate();
   const [selectedPeriod, setSelectedPeriod] = useState(currentPeriod || '30d');
   
   // Calcular sucursales activas
   const activeLocations = locations.filter(loc => loc.node.isActive).length;
   const totalLocations = locations.length;
-  
-  // Procesar datos para gráficas de rendimiento
-  const performanceData = [];
-  if (orders && orders.edges) {
-    // Agrupar órdenes por fecha
-    const ordersByDate = {};
-    
-    orders.edges.forEach(edge => {
-      const order = edge.node;
-      const date = new Date(order.createdAt);
-      const dateKey = date.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' });
-      
-      if (!ordersByDate[dateKey]) {
-        ordersByDate[dateKey] = {
-          date: dateKey,
-          sales: 0,
-          orders: 0,
-          totalAmount: 0
-        };
-      }
-      
-      const amount = parseFloat(order.currentTotalPriceSet.shopMoney.amount);
-      ordersByDate[dateKey].sales += amount;
-      ordersByDate[dateKey].orders += 1;
-      ordersByDate[dateKey].totalAmount += amount;
-    });
-    
-    // Convertir a array y calcular métricas adicionales
-    Object.values(ordersByDate).forEach(day => {
-      performanceData.push({
-        date: day.date,
-        sales: Math.round(day.sales),
-        orders: day.orders,
-        avgTicket: day.orders > 0 ? Math.round(day.totalAmount / day.orders) : 0,
-        conversion: day.orders > 0 ? Math.round((day.orders / 50) * 100) : 0 // Asumiendo 50 visitas diarias promedio
-      });
-    });
-    
-    // Ordenar por fecha (más reciente primero y tomar últimos 7 días)
-    performanceData.sort((a, b) => {
-      const dateA = new Date(a.date);
-      const dateB = new Date(b.date);
-      return dateA - dateB;
-    });
-    
-    // Tomar solo los últimos 7 días
-    performanceData.splice(0, Math.max(0, performanceData.length - 7));
-  }
   
   return (
     <div style={{ background: '#f8f9fa', minHeight: '100vh', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif' }}>
@@ -815,117 +763,6 @@ export default function DashboardNuevo() {
         </div>
 
 
-        {/* Gráficas de Rendimiento */}
-        <div style={{ marginBottom: 30 }}>
-          <h2 style={{ fontSize: 20, fontWeight: 600, marginBottom: 20, color: '#334155' }}>
-            Rendimiento por Período
-          </h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 20 }}>
-            {/* Gráfica de Ventas */}
-            <div style={{ 
-              backgroundColor: 'white', 
-              padding: 24, 
-              borderRadius: 8,
-              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-              transition: 'box-shadow 0.3s ease',
-              cursor: 'pointer'
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)'}
-            onMouseLeave={(e) => e.currentTarget.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.1)'}>
-              <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16, color: '#334155' }}>Ventas</h3>
-              <ResponsiveContainer width="100%" height={200}>
-                <LineChart data={performanceData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis dataKey="date" stroke="#6b7280" fontSize={12} />
-                  <YAxis stroke="#6b7280" fontSize={12} />
-                  <Tooltip 
-                    formatter={(value) => [`$${value.toLocaleString('es-ES')}`, 'Ventas']}
-                    contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: 4 }}
-                  />
-                  <Line type="monotone" dataKey="sales" stroke="#334155" strokeWidth={2} dot={false} />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-
-            {/* Gráfica de Órdenes */}
-            <div style={{ 
-              backgroundColor: 'white', 
-              padding: 24, 
-              borderRadius: 8,
-              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-              transition: 'box-shadow 0.3s ease',
-              cursor: 'pointer'
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)'}
-            onMouseLeave={(e) => e.currentTarget.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.1)'}>
-              <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16, color: '#334155' }}>Órdenes</h3>
-              <ResponsiveContainer width="100%" height={200}>
-                <BarChart data={performanceData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis dataKey="date" stroke="#6b7280" fontSize={12} />
-                  <YAxis stroke="#6b7280" fontSize={12} />
-                  <Tooltip 
-                    formatter={(value) => [value, 'Órdenes']}
-                    contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: 4 }}
-                  />
-                  <Bar dataKey="orders" fill="#475569" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-
-            {/* Gráfica de Ticket Promedio */}
-            <div style={{ 
-              backgroundColor: 'white', 
-              padding: 24, 
-              borderRadius: 8,
-              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-              transition: 'box-shadow 0.3s ease',
-              cursor: 'pointer'
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)'}
-            onMouseLeave={(e) => e.currentTarget.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.1)'}>
-              <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16, color: '#334155' }}>Ticket Promedio</h3>
-              <ResponsiveContainer width="100%" height={200}>
-                <AreaChart data={performanceData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis dataKey="date" stroke="#6b7280" fontSize={12} />
-                  <YAxis stroke="#6b7280" fontSize={12} />
-                  <Tooltip 
-                    formatter={(value) => [`$${value.toLocaleString('es-ES')}`, 'Ticket']}
-                    contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: 4 }}
-                  />
-                  <Area type="monotone" dataKey="avgTicket" stroke="#334155" fill="#e5e7eb" />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-
-            {/* Gráfica de Tasa de Conversión */}
-            <div style={{ 
-              backgroundColor: 'white', 
-              padding: 24, 
-              borderRadius: 8,
-              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-              transition: 'box-shadow 0.3s ease',
-              cursor: 'pointer'
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)'}
-            onMouseLeave={(e) => e.currentTarget.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.1)'}>
-              <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16, color: '#334155' }}>Conversión</h3>
-              <ResponsiveContainer width="100%" height={200}>
-                <LineChart data={performanceData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis dataKey="date" stroke="#6b7280" fontSize={12} />
-                  <YAxis stroke="#6b7280" fontSize={12} tickFormatter={(value) => `${value}%`} />
-                  <Tooltip 
-                    formatter={(value) => [`${value}%`, 'Conversión']}
-                    contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: 4 }}
-                  />
-                  <Line type="monotone" dataKey="conversion" stroke="#334155" strokeWidth={2} dot={false} />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );
