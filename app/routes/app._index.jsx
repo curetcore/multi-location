@@ -612,7 +612,8 @@ export default function DashboardNuevo() {
             <div style={{
               maxHeight: '500px',
               overflowY: 'auto',
-              overflowX: 'auto'
+              overflowX: 'auto',
+              position: 'relative'
             }}>
               <table style={{
                 width: '100%',
@@ -644,18 +645,9 @@ export default function DashboardNuevo() {
                       textAlign: 'right',
                       fontWeight: '600',
                       color: '#334155',
-                      minWidth: '100px'
+                      minWidth: '150px'
                     }}>
-                      CANT. TOTAL
-                    </th>
-                    <th style={{
-                      padding: '16px',
-                      textAlign: 'right',
-                      fontWeight: '600',
-                      color: '#334155',
-                      minWidth: '120px'
-                    }}>
-                      INVERSIÓN TOTAL
+                      CANT. / INVERSIÓN TOTAL
                     </th>
                     {locations.slice(0, 8).map(location => (
                       <th key={location.node.id} style={{
@@ -693,18 +685,14 @@ export default function DashboardNuevo() {
                       <td style={{
                         padding: '16px',
                         textAlign: 'right',
-                        color: '#334155',
-                        fontWeight: '600'
+                        color: '#334155'
                       }}>
-                        {product.totalQuantity.toLocaleString()}
-                      </td>
-                      <td style={{
-                        padding: '16px',
-                        textAlign: 'right',
-                        color: '#334155',
-                        fontWeight: '600'
-                      }}>
-                        ${Math.round(product.totalInvestment).toLocaleString()}
+                        <div style={{ fontWeight: '600' }}>
+                          {product.totalQuantity.toLocaleString()}
+                        </div>
+                        <div style={{ fontSize: '13px', color: '#6b7280' }}>
+                          ${Math.round(product.totalInvestment).toLocaleString()}
+                        </div>
                       </td>
                       {locations.slice(0, 8).map(location => {
                         const locationData = product.locationData[location.node.id];
@@ -734,32 +722,33 @@ export default function DashboardNuevo() {
                   ))}
                   {/* Fila de totales */}
                   <tr style={{
+                    position: 'sticky',
+                    bottom: 0,
                     borderTop: '2px solid #e5e7eb',
-                    background: '#f8f9fa',
-                    fontWeight: '600'
+                    background: '#1e293b',
+                    fontWeight: '600',
+                    color: 'white'
                   }}>
                     <td style={{
                       padding: '16px',
-                      color: '#1a1a1a',
+                      color: 'white',
                       position: 'sticky',
                       left: 0,
-                      background: '#f8f9fa'
+                      background: '#1e293b'
                     }}>
                       TOTALES
                     </td>
                     <td style={{
                       padding: '16px',
                       textAlign: 'right',
-                      color: '#1a1a1a'
+                      color: 'white'
                     }}>
-                      {productsList?.reduce((sum, p) => sum + p.totalQuantity, 0).toLocaleString() || '0'}
-                    </td>
-                    <td style={{
-                      padding: '16px',
-                      textAlign: 'right',
-                      color: '#1a1a1a'
-                    }}>
-                      ${productsList?.reduce((sum, p) => sum + Math.round(p.totalInvestment), 0).toLocaleString() || '0'}
+                      <div>
+                        {productsList?.reduce((sum, p) => sum + p.totalQuantity, 0).toLocaleString() || '0'}
+                      </div>
+                      <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.8)' }}>
+                        ${productsList?.reduce((sum, p) => sum + Math.round(p.totalInvestment), 0).toLocaleString() || '0'}
+                      </div>
                     </td>
                     {locations.slice(0, 8).map(location => {
                       const locationTotal = productsList?.reduce((sum, product) => {
@@ -775,14 +764,12 @@ export default function DashboardNuevo() {
                         <td key={location.node.id} style={{
                           padding: '16px',
                           textAlign: 'center',
-                          color: '#1a1a1a',
-                          borderLeft: '1px solid #e5e7eb'
+                          color: 'white',
+                          borderLeft: '1px solid rgba(255,255,255,0.2)'
                         }}>
-                          <div>
-                            <div>{locationTotal.toLocaleString()}</div>
-                            <div style={{ fontSize: '12px', color: '#6b7280' }}>
-                              ${locationInvestment.toLocaleString()}
-                            </div>
+                          <div>{locationTotal.toLocaleString()}</div>
+                          <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.8)' }}>
+                            ${locationInvestment.toLocaleString()}
                           </div>
                         </td>
                       );
