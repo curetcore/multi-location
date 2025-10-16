@@ -458,52 +458,54 @@ export default function DashboardNuevo() {
           <div style={{ marginBottom: '30px' }}>
             <h1 style={{ 
               color: 'white', 
-              fontSize: '42px', 
+              fontSize: '48px', 
               fontWeight: '700',
               margin: '0 0 10px 0',
-              letterSpacing: '-1px'
+              letterSpacing: '-1px',
+              textTransform: 'uppercase'
             }}>
-              Dashboard Analítico
+              CENTRO DE CONTROL MULTI-TIENDA
             </h1>
             <p style={{ 
               color: 'rgba(255,255,255,0.9)', 
-              fontSize: '18px',
-              margin: 0
+              fontSize: '20px',
+              margin: 0,
+              fontWeight: '300'
             }}>
-              {shop?.name || 'Multi-Location Analytics'} • {activeLocations} sucursales activas
+              {shop?.name || 'Multi-Location Analytics'} • {activeLocations} sucursales activas • Últimos 30 días
             </p>
           </div>
 
           {/* Métricas resumen en el header */}
           <div style={{ display: 'flex', gap: '35px', alignItems: 'center', marginTop: '25px' }}>
             <div>
-              <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', margin: '0 0 5px 0', textTransform: 'uppercase' }}>Ventas Hoy</p>
+              <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', margin: '0 0 5px 0', textTransform: 'uppercase' }}>Ventas (30 días)</p>
               <p style={{ color: 'white', fontSize: '26px', fontWeight: '700', margin: 0 }}>
-                ${todayMetrics.sales.toLocaleString()}
+                ${metrics.totalSales.toLocaleString()}
               </p>
             </div>
             <div style={{ width: '1px', height: '40px', background: 'rgba(255,255,255,0.2)' }} />
             <div>
-              <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', margin: '0 0 5px 0', textTransform: 'uppercase' }}>Órdenes Hoy</p>
+              <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', margin: '0 0 5px 0', textTransform: 'uppercase' }}>Órdenes (30 días)</p>
               <p style={{ color: 'white', fontSize: '26px', fontWeight: '700', margin: 0 }}>
-                {todayMetrics.orders}
+                {metrics.totalOrders}
               </p>
             </div>
             <div style={{ width: '1px', height: '40px', background: 'rgba(255,255,255,0.2)' }} />
             <div>
-              <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', margin: '0 0 5px 0', textTransform: 'uppercase' }}>Ticket Promedio Hoy</p>
+              <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', margin: '0 0 5px 0', textTransform: 'uppercase' }}>Ticket Promedio</p>
               <p style={{ color: 'white', fontSize: '26px', fontWeight: '700', margin: 0 }}>
-                ${todayMetrics.avgTicket.toLocaleString()}
+                ${metrics.avgTicket}
               </p>
             </div>
             <div style={{ width: '1px', height: '40px', background: 'rgba(255,255,255,0.2)' }} />
             <div>
-              <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', margin: '0 0 5px 0', textTransform: 'uppercase' }}>Sucursal Líder</p>
-              <p style={{ color: 'white', fontSize: '20px', fontWeight: '700', margin: 0 }}>
-                {todayMetrics.topLocation.name}
+              <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', margin: '0 0 5px 0', textTransform: 'uppercase' }}>Inventario Total</p>
+              <p style={{ color: 'white', fontSize: '26px', fontWeight: '700', margin: 0 }}>
+                {metrics.totalInventory.toLocaleString()}
               </p>
               <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '14px', margin: 0 }}>
-                ${todayMetrics.topLocation.sales.toLocaleString()}
+                productos
               </p>
             </div>
             <div style={{ flex: 1 }} />
@@ -528,7 +530,7 @@ export default function DashboardNuevo() {
               textTransform: 'uppercase',
               letterSpacing: '1px'
             }}>
-              MÉTRICAS CLAVE
+              MÉTRICAS DE VENTA
             </h2>
             <select 
               style={{
@@ -813,118 +815,49 @@ export default function DashboardNuevo() {
           </div>
         </div>
 
-        {/* VALOR DE INVENTARIO POR SUCURSAL */}
-        <div style={{ marginBottom: '30px' }}>
-          <h2 style={{ 
-            fontSize: '16px', 
-            fontWeight: '600', 
-            marginBottom: '20px',
-            color: '#1a1a1a',
-            textTransform: 'uppercase',
-            letterSpacing: '1px'
-          }}>
-            VALOR DE INVENTARIO POR SUCURSAL
-          </h2>
-          
-          <div style={{ 
-            display: 'grid', 
-            gridTemplateColumns: `repeat(${Math.min(inventoryByLocation.length || locations.length, 4)}, 1fr)`, 
-            gap: '16px',
-            gridAutoRows: 'minmax(100px, auto)'
-          }}>
-            {(inventoryByLocation.length > 0 ? inventoryByLocation : locations).slice(0, 8).map((item, index) => {
-              // Usar datos reales si están disponibles, si no, usar estimados
-              const isRealData = inventoryByLocation.length > 0;
-              const locationData = isRealData ? item : item.node;
-              const locationName = isRealData ? item.name : locationData.name;
-              const locationQuantity = isRealData ? item.quantity : Math.round(metrics.totalInventory / locations.length);
-              const locationValue = isRealData ? Math.round(item.value) : locationQuantity * 85;
-              
-              return (
-                <div 
-                  key={isRealData ? item.id : locationData.id}
-                  style={{
-                    background: 'white',
-                    borderRadius: '12px',
-                    padding: '25px',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
-                    border: 'none',
-                    transition: 'transform 0.2s ease, box-shadow 0.2s ease',
-                    cursor: 'pointer'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'translateY(-2px)';
-                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.05)';
-                  }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '15px' }}>
-                    <div style={{ width: '100%' }}>
-                      <p style={{ fontSize: '14px', color: '#6b7280', margin: '0 0 8px 0' }}>{locationName}</p>
-                      <p style={{ fontSize: '32px', fontWeight: '700', margin: 0, color: '#1a1a1a' }}>
-                        ${locationValue.toLocaleString()}
-                      </p>
-                    </div>
-                    <div style={{
-                      width: '48px',
-                      height: '48px',
-                      background: '#f3f4f6',
-                      borderRadius: '12px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0
-                    }}>
-                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M5 20V10L12 3L19 10V20H15V13H9V20H5Z" fill="#475569"/>
-                        <path d="M10 20V15H14V20H10Z" fill="#475569"/>
-                      </svg>
-                    </div>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <span style={{ color: '#6b7280', fontSize: '14px' }}>
-                      {locationQuantity.toLocaleString()} productos
-                    </span>
-                    {(isRealData || locationData.isActive) && (
-                      <span style={{ color: '#10b981', fontSize: '14px' }}>• Activa</span>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-          
-          {/* Mensaje si no hay sucursales */}
-          {locations.length === 0 && inventoryByLocation.length === 0 && (
-            <div style={{
-              background: '#f9fafb',
-              border: '1px dashed #e5e7eb',
-              borderRadius: '12px',
-              padding: '40px',
-              textAlign: 'center'
-            }}>
-              <p style={{ color: '#6b7280', margin: 0 }}>
-                No hay sucursales configuradas
-              </p>
-            </div>
-          )}
-        </div>
-
         {/* TABLA DE PRODUCTOS POR SUCURSAL */}
         <div style={{ marginBottom: '30px' }}>
-          <h2 style={{ 
-            fontSize: '16px', 
-            fontWeight: '600', 
-            marginBottom: '20px',
-            color: '#1a1a1a',
-            textTransform: 'uppercase',
-            letterSpacing: '1px'
-          }}>
-            INVENTARIO DE PRODUCTOS POR SUCURSAL
-          </h2>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+            <h2 style={{ 
+              fontSize: '16px', 
+              fontWeight: '600', 
+              margin: 0,
+              color: '#1a1a1a',
+              textTransform: 'uppercase',
+              letterSpacing: '1px'
+            }}>
+              INVENTARIO DE PRODUCTOS POR SUCURSAL
+            </h2>
+            <button 
+              style={{
+                background: '#334155',
+                color: 'white',
+                border: 'none',
+                padding: '8px 16px',
+                borderRadius: '8px',
+                fontSize: '14px',
+                fontWeight: '500',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                transition: 'background 0.2s ease'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = '#1e293b'}
+              onMouseLeave={(e) => e.currentTarget.style.background = '#334155'}
+              onClick={() => {
+                // TODO: Implementar exportación a Excel/CSV
+                alert('Función de exportar próximamente disponible');
+              }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M21 15V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V15" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M7 10L12 15L17 10" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M12 15V3" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              Exportar
+            </button>
+          </div>
           
           <div style={{
             background: 'white',
@@ -998,10 +931,11 @@ export default function DashboardNuevo() {
                   {productsList && productsList.map((product, index) => (
                     <tr key={product.id} style={{
                       borderBottom: '1px solid #f0f0f0',
-                      transition: 'background 0.2s ease'
+                      transition: 'background 0.2s ease',
+                      background: index % 2 === 0 ? 'white' : '#f8f9fa'
                     }}
-                    onMouseEnter={(e) => e.currentTarget.style.background = '#f8f9fa'}
-                    onMouseLeave={(e) => e.currentTarget.style.background = 'white'}>
+                    onMouseEnter={(e) => e.currentTarget.style.background = '#e5e7eb'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = index % 2 === 0 ? 'white' : '#f8f9fa'}>
                       <td style={{
                         padding: '16px',
                         fontWeight: '500',
@@ -1118,16 +1052,42 @@ export default function DashboardNuevo() {
 
         {/* MÉTRICAS CLAVE POR SUCURSAL */}
         <div style={{ marginBottom: '30px' }}>
-          <h2 style={{ 
-            fontSize: '16px', 
-            fontWeight: '600', 
-            marginBottom: '20px',
-            color: '#1a1a1a',
-            textTransform: 'uppercase',
-            letterSpacing: '1px'
-          }}>
-            MÉTRICAS CLAVE POR SUCURSAL
-          </h2>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+            <h2 style={{ 
+              fontSize: '16px', 
+              fontWeight: '600', 
+              margin: 0,
+              color: '#1a1a1a',
+              textTransform: 'uppercase',
+              letterSpacing: '1px'
+            }}>
+              MÉTRICAS CLAVE POR SUCURSAL
+            </h2>
+            <select 
+              style={{
+                background: 'white',
+                color: '#1e293b',
+                border: '1px solid #e5e7eb',
+                padding: '8px 16px',
+                borderRadius: '8px',
+                fontSize: '14px',
+                fontWeight: '500',
+                cursor: 'pointer',
+                outline: 'none'
+              }}
+              value={selectedPeriod}
+              onChange={(e) => {
+                const url = new URL(window.location);
+                url.searchParams.set('period', e.target.value);
+                window.location.href = url.toString();
+              }}
+            >
+              <option value="7d">Últimos 7 días</option>
+              <option value="30d">Últimos 30 días</option>
+              <option value="90d">Últimos 90 días</option>
+              <option value="365d">Último año</option>
+            </select>
+          </div>
           
           <div style={{ 
             display: 'grid', 
