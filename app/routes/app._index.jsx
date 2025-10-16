@@ -1012,39 +1012,42 @@ export default function DashboardNuevo() {
                   key={product.title}
                   style={{
                     background: 'white',
-                    borderRadius: '12px',
+                    borderRadius: '16px',
                     padding: '20px',
-                    boxShadow: isTop3 ? '0 4px 12px rgba(0,0,0,0.1)' : '0 2px 8px rgba(0,0,0,0.05)',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                    border: isTop3 ? '2px solid #e5e7eb' : '1px solid #e5e7eb',
                     position: 'relative',
-                    transition: 'all 0.2s ease',
-                    cursor: 'pointer',
-                    border: isTop3 ? '2px solid #334155' : 'none'
+                    transition: 'all 0.15s ease',
+                    cursor: 'pointer'
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'translateY(-2px)';
-                    e.currentTarget.style.boxShadow = '0 6px 16px rgba(0,0,0,0.15)';
+                    e.currentTarget.style.transform = 'translateY(-1px)';
+                    e.currentTarget.style.boxShadow = '0 4px 6px rgba(0,0,0,0.1)';
+                    if (!isTop3) e.currentTarget.style.borderColor = '#d1d5db';
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = isTop3 ? '0 4px 12px rgba(0,0,0,0.1)' : '0 2px 8px rgba(0,0,0,0.05)';
+                    e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)';
+                    e.currentTarget.style.borderColor = '#e5e7eb';
                   }}
                 >
                   {/* Ranking Badge */}
                   <div style={{
                     position: 'absolute',
-                    top: '-12px',
+                    top: '-10px',
                     left: '20px',
-                    background: isTop3 ? '#334155' : '#6b7280',
-                    color: 'white',
-                    width: '32px',
-                    height: '32px',
+                    background: isTop3 ? '#111827' : '#f3f4f6',
+                    color: isTop3 ? 'white' : '#6b7280',
+                    width: '28px',
+                    height: '28px',
                     borderRadius: '50%',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    fontSize: '16px',
-                    fontWeight: '700',
-                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    border: '3px solid white',
+                    boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
                   }}>
                     {product.rank}
                   </div>
@@ -1075,12 +1078,13 @@ export default function DashboardNuevo() {
                         <p style={{ fontSize: '12px', color: '#6b7280', margin: 0 }}>unidades vendidas</p>
                       </div>
                       <div style={{ 
-                        padding: '4px 8px',
-                        background: '#f3f4f6',
-                        borderRadius: '6px',
+                        padding: '4px 10px',
+                        background: '#fafafa',
+                        borderRadius: '8px',
                         fontSize: '13px',
                         fontWeight: '500',
-                        color: '#334155'
+                        color: '#6b7280',
+                        border: '1px solid #e5e7eb'
                       }}>
                         ${product.revenue.toLocaleString()}
                       </div>
@@ -1120,30 +1124,32 @@ export default function DashboardNuevo() {
                         width: '100%',
                         height: '4px',
                         background: '#f3f4f6',
-                        borderRadius: '2px',
+                        borderRadius: '4px',
                         overflow: 'hidden'
                       }}>
                         <div style={{
                           width: `${performancePercent}%`,
                           height: '100%',
-                          background: isTop3 ? '#334155' : '#94a3b8',
-                          transition: 'width 0.3s ease'
+                          background: isTop3 ? '#111827' : '#d1d5db',
+                          transition: 'width 0.3s ease',
+                          borderRadius: '4px'
                         }} />
                       </div>
                     </div>
                     
                     {/* Ubicaciones */}
                     <div style={{
-                      background: '#f8f9fa',
-                      borderRadius: '8px',
-                      padding: '10px',
+                      background: '#fafafa',
+                      borderRadius: '10px',
+                      padding: '12px',
                       fontSize: '12px',
-                      color: '#6b7280'
+                      color: '#6b7280',
+                      border: '1px solid #f3f4f6'
                     }}>
-                      <p style={{ margin: '0 0 4px 0', fontWeight: '500' }}>
-                        Disponible en {product.locationsCount} sucursales:
+                      <p style={{ margin: '0 0 4px 0', fontWeight: '500', color: '#374151' }}>
+                        Disponible en {product.locationsCount} sucursales
                       </p>
-                      <p style={{ margin: 0, fontSize: '11px', lineHeight: '1.4' }}>
+                      <p style={{ margin: 0, fontSize: '11px', lineHeight: '1.4', color: '#9ca3af' }}>
                         {product.locations.slice(0, 3).join(', ')}
                         {product.locations.length > 3 && ` y ${product.locations.length - 3} más`}
                       </p>
@@ -1718,35 +1724,40 @@ export default function DashboardNuevo() {
                   key={location.id}
                   style={{
                     background: 'white',
-                    borderRadius: '12px',
+                    borderRadius: '16px',
                     padding: '20px',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                    border: isTopLocation ? '2px solid #e5e7eb' : '1px solid #e5e7eb',
                     position: 'relative',
-                    transition: 'all 0.2s ease',
-                    cursor: 'pointer',
-                    border: isTopLocation ? '2px solid #334155' : 'none'
+                    transition: 'all 0.15s ease',
+                    cursor: 'pointer'
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'translateY(-2px)';
-                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
+                    e.currentTarget.style.transform = 'translateY(-1px)';
+                    e.currentTarget.style.boxShadow = '0 4px 6px rgba(0,0,0,0.1)';
+                    if (!isTopLocation) e.currentTarget.style.borderColor = '#d1d5db';
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.05)';
+                    e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)';
+                    e.currentTarget.style.borderColor = '#e5e7eb';
                   }}
                 >
                   {/* Badge de líder */}
                   {isTopLocation && (
                     <div style={{
                       position: 'absolute',
-                      top: '-12px',
+                      top: '-10px',
                       right: '20px',
-                      background: '#334155',
+                      background: '#111827',
                       color: 'white',
                       padding: '4px 12px',
-                      borderRadius: '12px',
-                      fontSize: '12px',
-                      fontWeight: '600'
+                      borderRadius: '14px',
+                      fontSize: '11px',
+                      fontWeight: '600',
+                      letterSpacing: '0.5px',
+                      border: '2px solid white',
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
                     }}>
                       LÍDER
                     </div>
@@ -1763,18 +1774,19 @@ export default function DashboardNuevo() {
                       {location.name}
                     </h3>
                     <div style={{
-                      width: '40px',
-                      height: '40px',
-                      background: '#f3f4f6',
+                      width: '36px',
+                      height: '36px',
+                      background: '#fafafa',
                       borderRadius: '10px',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      flexShrink: 0
+                      flexShrink: 0,
+                      border: '1px solid #f3f4f6'
                     }}>
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M5 20V10L12 3L19 10V20H15V13H9V20H5Z" fill="#475569"/>
-                        <path d="M10 20V15H14V20H10Z" fill="#475569"/>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M5 20V10L12 3L19 10V20H15V13H9V20H5Z" fill="#6b7280"/>
+                        <path d="M10 20V15H14V20H10Z" fill="#6b7280"/>
                       </svg>
                     </div>
                   </div>
@@ -1829,34 +1841,36 @@ export default function DashboardNuevo() {
                     </div>
                     <div style={{
                       width: '100%',
-                      height: '6px',
+                      height: '4px',
                       background: '#f3f4f6',
-                      borderRadius: '3px',
+                      borderRadius: '4px',
                       overflow: 'hidden'
                     }}>
                       <div style={{
                         width: `${metrics.totalSales > 0 ? Math.round((location.sales / metrics.totalSales) * 100) : 0}%`,
                         height: '100%',
-                        background: '#334155',
-                        transition: 'width 0.3s ease'
+                        background: '#111827',
+                        transition: 'width 0.3s ease',
+                        borderRadius: '4px'
                       }} />
                     </div>
                   </div>
                   
                   {/* Top producto */}
                   <div style={{
-                    background: '#f8f9fa',
-                    borderRadius: '8px',
+                    background: '#fafafa',
+                    borderRadius: '10px',
                     padding: '12px',
-                    marginTop: '16px'
+                    marginTop: '16px',
+                    border: '1px solid #f3f4f6'
                   }}>
-                    <p style={{ fontSize: '11px', color: '#6b7280', margin: '0 0 4px 0', textTransform: 'uppercase' }}>
+                    <p style={{ fontSize: '11px', color: '#6b7280', margin: '0 0 4px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                       Producto más vendido
                     </p>
-                    <p style={{ fontSize: '13px', fontWeight: '500', margin: 0, color: '#1a1a1a' }}>
+                    <p style={{ fontSize: '13px', fontWeight: '500', margin: 0, color: '#111827' }}>
                       {location.topProduct.name}
                     </p>
-                    <p style={{ fontSize: '12px', color: '#6b7280', margin: 0 }}>
+                    <p style={{ fontSize: '12px', color: '#9ca3af', margin: 0 }}>
                       {location.topProduct.quantity} unidades
                     </p>
                   </div>
