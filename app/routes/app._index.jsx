@@ -200,6 +200,17 @@ export const loader = async ({ request }) => {
     const totalOrders = currentPeriodOrders.length;
     const avgTicket = totalOrders > 0 ? totalSales / totalOrders : 0;
     
+    // Crear mapeo de títulos de productos a SKUs
+    const productSkuMap = {};
+    products.forEach(product => {
+      const productTitle = product.node.title;
+      // Obtener el primer SKU disponible del producto
+      const firstSku = product.node.variants.edges.find(v => v.node.sku)?.node.sku || '';
+      if (productTitle && firstSku) {
+        productSkuMap[productTitle] = firstSku;
+      }
+    });
+    
     // Calcular métricas del período anterior (mismo número de días)
     const previousPeriodStart = new Date();
     previousPeriodStart.setDate(previousPeriodStart.getDate() - (days * 2));
@@ -436,7 +447,8 @@ export const loader = async ({ request }) => {
         ...product,
         rank: index + 1,
         revenue: Math.round(product.revenue),
-        avgPrice: Math.round(product.avgPrice)
+        avgPrice: Math.round(product.avgPrice),
+        sku: productSkuMap[product.title] || ''
       }));
     
     // Procesar datos de empleados desde las notas de las órdenes
@@ -1196,6 +1208,18 @@ export default function DashboardNuevo() {
                   
                   {/* Producto Info */}
                   <div style={{ marginBottom: '16px', paddingTop: '8px' }}>
+                    {product.sku && (
+                      <div style={{ 
+                        fontSize: '12px',
+                        fontWeight: '600',
+                        color: '#6b7280',
+                        marginBottom: '4px',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.05em'
+                      }}>
+                        {product.sku.substring(0, 4)}
+                      </div>
+                    )}
                     <h3 style={{ 
                       fontSize: '16px', 
                       fontWeight: '600', 
