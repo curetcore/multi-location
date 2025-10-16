@@ -739,60 +739,78 @@ export default function DashboardNuevo() {
           
           <div style={{
             background: 'white',
-            borderRadius: '12px',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+            borderRadius: '16px',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+            border: '1px solid #e5e7eb',
             overflow: 'hidden'
           }}>
             <div style={{
-              maxHeight: '500px',
+              maxHeight: '600px',
               overflowY: 'auto',
               overflowX: 'auto',
               position: 'relative'
             }}>
               <table style={{
                 width: '100%',
-                borderCollapse: 'collapse',
+                borderCollapse: 'separate',
+                borderSpacing: 0,
                 fontSize: '14px'
               }}>
-                <thead style={{
-                  position: 'sticky',
-                  top: 0,
-                  background: '#f8f9fa',
-                  borderBottom: '2px solid #e5e7eb',
-                  zIndex: 10
-                }}>
-                  <tr>
+                <thead>
+                  <tr style={{
+                    background: '#fafafa'
+                  }}>
                     <th style={{
-                      padding: '16px',
+                      padding: '12px 16px',
                       textAlign: 'left',
-                      fontWeight: '600',
-                      color: '#334155',
-                      minWidth: '200px',
+                      fontWeight: '500',
+                      color: '#6b7280',
+                      fontSize: '12px',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em',
+                      borderBottom: '1px solid #e5e7eb',
                       position: 'sticky',
+                      top: 0,
                       left: 0,
-                      background: '#f8f9fa'
+                      background: '#fafafa',
+                      zIndex: 20,
+                      minWidth: '200px'
                     }}>
-                      PRODUCTO
+                      Producto
                     </th>
                     <th style={{
-                      padding: '16px',
+                      padding: '12px 16px',
                       textAlign: 'right',
-                      fontWeight: '600',
-                      color: '#334155',
+                      fontWeight: '500',
+                      color: '#6b7280',
+                      fontSize: '12px',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em',
+                      borderBottom: '1px solid #e5e7eb',
+                      position: 'sticky',
+                      top: 0,
+                      background: '#fafafa',
                       minWidth: '150px'
                     }}>
-                      CANT. / INVERSIÓN TOTAL
+                      Total
                     </th>
                     {locations.slice(0, 8).map(location => (
                       <th key={location.node.id} style={{
-                        padding: '16px',
+                        padding: '12px 16px',
                         textAlign: 'center',
-                        fontWeight: '600',
-                        color: '#334155',
-                        minWidth: '150px',
-                        borderLeft: '1px solid #e5e7eb'
+                        fontWeight: '500',
+                        color: '#6b7280',
+                        fontSize: '12px',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.05em',
+                        borderBottom: '1px solid #e5e7eb',
+                        borderLeft: '1px solid #e5e7eb',
+                        position: 'sticky',
+                        top: 0,
+                        background: '#fafafa',
+                        minWidth: '150px'
                       }}>
-                        {location.node.name.toUpperCase()}
+                        {location.node.name}
                       </th>
                     ))}
                   </tr>
@@ -800,31 +818,48 @@ export default function DashboardNuevo() {
                 <tbody>
                   {productsList && productsList.map((product, index) => (
                     <tr key={product.id} style={{
-                      borderBottom: '1px solid #f0f0f0',
-                      transition: 'background 0.2s ease',
-                      background: index % 2 === 0 ? 'white' : '#f8f9fa'
+                      borderBottom: '1px solid #e5e7eb',
+                      transition: 'all 0.15s ease',
+                      background: 'white',
+                      cursor: 'pointer'
                     }}
-                    onMouseEnter={(e) => e.currentTarget.style.background = '#e5e7eb'}
-                    onMouseLeave={(e) => e.currentTarget.style.background = index % 2 === 0 ? 'white' : '#f8f9fa'}>
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = '#fafafa';
+                      e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'white';
+                      e.currentTarget.style.boxShadow = 'none';
+                    }}>
                       <td style={{
-                        padding: '16px',
+                        padding: '14px 16px',
                         fontWeight: '500',
-                        color: '#1a1a1a',
+                        color: '#111827',
                         position: 'sticky',
                         left: 0,
-                        background: 'inherit'
+                        background: 'inherit',
+                        borderBottom: '1px solid #e5e7eb'
                       }}>
-                        {product.title}
+                        <div style={{ lineHeight: '1.5' }}>{product.title}</div>
                       </td>
                       <td style={{
-                        padding: '16px',
+                        padding: '14px 16px',
                         textAlign: 'right',
-                        color: '#334155'
+                        borderBottom: '1px solid #e5e7eb'
                       }}>
-                        <div style={{ fontWeight: '600' }}>
-                          {product.totalQuantity.toLocaleString()}
+                        <div style={{ 
+                          fontWeight: '600',
+                          fontSize: '14px',
+                          color: '#111827',
+                          marginBottom: '2px'
+                        }}>
+                          {product.totalQuantity.toLocaleString()} u.
                         </div>
-                        <div style={{ fontSize: '13px', color: '#6b7280' }}>
+                        <div style={{ 
+                          fontSize: '12px', 
+                          color: '#6b7280',
+                          fontWeight: '400'
+                        }}>
                           ${Math.round(product.totalInvestment).toLocaleString()}
                         </div>
                       </td>
@@ -832,22 +867,34 @@ export default function DashboardNuevo() {
                         const locationData = product.locationData[location.node.id];
                         return (
                           <td key={location.node.id} style={{
-                            padding: '16px',
+                            padding: '14px 16px',
                             textAlign: 'center',
-                            color: '#6b7280',
-                            borderLeft: '1px solid #f0f0f0'
+                            borderLeft: '1px solid #e5e7eb',
+                            borderBottom: '1px solid #e5e7eb'
                           }}>
                             {locationData ? (
                               <div>
-                                <div style={{ fontWeight: '600', color: '#334155' }}>
+                                <div style={{ 
+                                  fontWeight: '600', 
+                                  fontSize: '14px',
+                                  color: '#111827',
+                                  marginBottom: '2px'
+                                }}>
                                   {locationData.quantity}
                                 </div>
-                                <div style={{ fontSize: '12px', color: '#6b7280' }}>
+                                <div style={{ 
+                                  fontSize: '12px', 
+                                  color: '#6b7280',
+                                  fontWeight: '400'
+                                }}>
                                   ${Math.round(locationData.investment).toLocaleString()}
                                 </div>
                               </div>
                             ) : (
-                              <span style={{ color: '#d1d5db' }}>-</span>
+                              <span style={{ 
+                                color: '#d1d5db',
+                                fontSize: '14px'
+                              }}>—</span>
                             )}
                           </td>
                         );
@@ -858,32 +905,41 @@ export default function DashboardNuevo() {
                   <tr style={{
                     position: 'sticky',
                     bottom: 0,
-                    borderTop: '3px solid #e5e7eb',
-                    background: 'linear-gradient(to right, #f8f9fa 0%, #f3f4f6 100%)',
-                    fontWeight: '700',
-                    color: '#1e293b'
+                    borderTop: '2px solid #e5e7eb',
+                    background: '#f9fafb',
+                    fontWeight: '600'
                   }}>
                     <td style={{
-                      padding: '16px',
-                      color: '#1e293b',
+                      padding: '14px 16px',
+                      color: '#6b7280',
                       position: 'sticky',
                       left: 0,
-                      background: '#f8f9fa',
-                      fontSize: '14px',
+                      background: '#f9fafb',
+                      fontSize: '12px',
                       textTransform: 'uppercase',
-                      letterSpacing: '0.5px'
+                      letterSpacing: '0.05em',
+                      fontWeight: '500'
                     }}>
-                      TOTALES
+                      Totales
                     </td>
                     <td style={{
-                      padding: '16px',
+                      padding: '14px 16px',
                       textAlign: 'right',
-                      color: '#1e293b'
+                      background: '#f9fafb'
                     }}>
-                      <div style={{ fontSize: '18px', fontWeight: '700' }}>
-                        {productsList?.reduce((sum, p) => sum + p.totalQuantity, 0).toLocaleString() || '0'}
+                      <div style={{ 
+                        fontSize: '14px', 
+                        fontWeight: '600',
+                        color: '#111827',
+                        marginBottom: '2px'
+                      }}>
+                        {productsList?.reduce((sum, p) => sum + p.totalQuantity, 0).toLocaleString() || '0'} u.
                       </div>
-                      <div style={{ fontSize: '14px', color: '#6b7280', fontWeight: '600' }}>
+                      <div style={{ 
+                        fontSize: '12px', 
+                        color: '#6b7280', 
+                        fontWeight: '500' 
+                      }}>
                         ${productsList?.reduce((sum, p) => sum + Math.round(p.totalInvestment), 0).toLocaleString() || '0'}
                       </div>
                     </td>
@@ -899,13 +955,24 @@ export default function DashboardNuevo() {
                       
                       return (
                         <td key={location.node.id} style={{
-                          padding: '16px',
+                          padding: '14px 16px',
                           textAlign: 'center',
-                          color: '#1e293b',
-                          borderLeft: '1px solid #e5e7eb'
+                          borderLeft: '1px solid #e5e7eb',
+                          background: '#f9fafb'
                         }}>
-                          <div style={{ fontSize: '16px', fontWeight: '700' }}>{locationTotal.toLocaleString()}</div>
-                          <div style={{ fontSize: '13px', color: '#6b7280', fontWeight: '600' }}>
+                          <div style={{ 
+                            fontSize: '14px', 
+                            fontWeight: '600',
+                            color: '#111827',
+                            marginBottom: '2px'
+                          }}>
+                            {locationTotal.toLocaleString()}
+                          </div>
+                          <div style={{ 
+                            fontSize: '12px', 
+                            color: '#6b7280', 
+                            fontWeight: '500'
+                          }}>
                             ${locationInvestment.toLocaleString()}
                           </div>
                         </td>
@@ -1204,208 +1271,307 @@ export default function DashboardNuevo() {
           
           <div style={{
             background: 'white',
-            borderRadius: '12px',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+            borderRadius: '16px',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+            border: '1px solid #e5e7eb',
             overflow: 'hidden'
           }}>
             <div style={{
-              overflowX: 'auto'
+              overflowX: 'auto',
+              maxHeight: '600px',
+              overflowY: 'auto'
             }}>
               <table style={{
                 width: '100%',
-                borderCollapse: 'collapse',
+                borderCollapse: 'separate',
+                borderSpacing: 0,
                 fontSize: '14px'
               }}>
-                <thead style={{
-                  background: '#f8f9fa',
-                  borderBottom: '2px solid #e5e7eb'
-                }}>
-                  <tr>
+                <thead>
+                  <tr style={{
+                    background: '#fafafa'
+                  }}>
                     <th style={{
-                      padding: '16px',
-                      textAlign: 'left',
-                      fontWeight: '600',
-                      color: '#334155',
-                      minWidth: '60px'
+                      padding: '12px 16px',
+                      textAlign: 'center',
+                      fontWeight: '500',
+                      color: '#6b7280',
+                      fontSize: '12px',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em',
+                      borderBottom: '1px solid #e5e7eb',
+                      position: 'sticky',
+                      top: 0,
+                      background: '#fafafa',
+                      minWidth: '50px',
+                      zIndex: 10
                     }}>
                       #
                     </th>
                     <th style={{
-                      padding: '16px',
+                      padding: '12px 16px',
                       textAlign: 'left',
-                      fontWeight: '600',
-                      color: '#334155',
+                      fontWeight: '500',
+                      color: '#6b7280',
+                      fontSize: '12px',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em',
+                      borderBottom: '1px solid #e5e7eb',
+                      borderLeft: '1px solid #e5e7eb',
+                      position: 'sticky',
+                      top: 0,
+                      background: '#fafafa',
                       minWidth: '200px'
                     }}>
-                      EMPLEADO
+                      Empleado
                     </th>
                     <th style={{
-                      padding: '16px',
+                      padding: '12px 16px',
                       textAlign: 'right',
-                      fontWeight: '600',
-                      color: '#334155',
+                      fontWeight: '500',
+                      color: '#6b7280',
+                      fontSize: '12px',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em',
+                      borderBottom: '1px solid #e5e7eb',
+                      borderLeft: '1px solid #e5e7eb',
+                      position: 'sticky',
+                      top: 0,
+                      background: '#fafafa',
                       minWidth: '120px'
                     }}>
-                      PRODUCTOS VENDIDOS
+                      Productos
                     </th>
                     <th style={{
-                      padding: '16px',
+                      padding: '12px 16px',
                       textAlign: 'right',
-                      fontWeight: '600',
-                      color: '#334155',
+                      fontWeight: '500',
+                      color: '#6b7280',
+                      fontSize: '12px',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em',
+                      borderBottom: '1px solid #e5e7eb',
+                      borderLeft: '1px solid #e5e7eb',
+                      position: 'sticky',
+                      top: 0,
+                      background: '#fafafa',
                       minWidth: '100px'
                     }}>
-                      ÓRDENES
+                      Órdenes
                     </th>
                     <th style={{
-                      padding: '16px',
+                      padding: '12px 16px',
                       textAlign: 'right',
-                      fontWeight: '600',
-                      color: '#334155',
+                      fontWeight: '500',
+                      color: '#6b7280',
+                      fontSize: '12px',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em',
+                      borderBottom: '1px solid #e5e7eb',
+                      borderLeft: '1px solid #e5e7eb',
+                      position: 'sticky',
+                      top: 0,
+                      background: '#fafafa',
                       minWidth: '120px'
                     }}>
-                      TOTAL VENDIDO
+                      Ventas
                     </th>
                     <th style={{
-                      padding: '16px',
+                      padding: '12px 16px',
                       textAlign: 'right',
-                      fontWeight: '600',
-                      color: '#334155',
+                      fontWeight: '500',
+                      color: '#6b7280',
+                      fontSize: '12px',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em',
+                      borderBottom: '1px solid #e5e7eb',
+                      borderLeft: '1px solid #e5e7eb',
+                      position: 'sticky',
+                      top: 0,
+                      background: '#fafafa',
                       minWidth: '100px'
                     }}>
-                      TICKET PROM.
+                      Ticket
                     </th>
                     <th style={{
-                      padding: '16px',
+                      padding: '12px 16px',
                       textAlign: 'right',
-                      fontWeight: '600',
-                      color: '#334155',
+                      fontWeight: '500',
+                      color: '#6b7280',
+                      fontSize: '12px',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em',
+                      borderBottom: '1px solid #e5e7eb',
+                      borderLeft: '1px solid #e5e7eb',
+                      position: 'sticky',
+                      top: 0,
+                      background: '#fafafa',
                       minWidth: '120px'
                     }}>
-                      COMISIÓN (1%)
+                      Comisión
                     </th>
                     <th style={{
-                      padding: '16px',
+                      padding: '12px 16px',
                       textAlign: 'center',
-                      fontWeight: '600',
-                      color: '#334155',
-                      minWidth: '150px'
+                      fontWeight: '500',
+                      color: '#6b7280',
+                      fontSize: '12px',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em',
+                      borderBottom: '1px solid #e5e7eb',
+                      borderLeft: '1px solid #e5e7eb',
+                      position: 'sticky',
+                      top: 0,
+                      background: '#fafafa',
+                      minWidth: '120px'
                     }}>
-                      SUCURSALES
+                      Sucursales
                     </th>
                   </tr>
                 </thead>
                 <tbody>
                   {topEmployees && topEmployees.map((employee, index) => {
                     const isTop3 = employee.rank <= 3;
-                    const rowBg = index % 2 === 0 ? 'white' : '#f8f9fa';
                     
                     return (
                       <tr key={employee.id} style={{
-                        borderBottom: '1px solid #f0f0f0',
-                        transition: 'background 0.2s ease',
-                        background: rowBg
+                        borderBottom: '1px solid #e5e7eb',
+                        transition: 'all 0.15s ease',
+                        background: 'white',
+                        cursor: 'pointer'
                       }}
-                      onMouseEnter={(e) => e.currentTarget.style.background = '#e5e7eb'}
-                      onMouseLeave={(e) => e.currentTarget.style.background = rowBg}>
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = '#fafafa';
+                        e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'white';
+                        e.currentTarget.style.boxShadow = 'none';
+                      }}>
                         <td style={{
-                          padding: '16px',
-                          fontWeight: '600',
-                          color: isTop3 ? '#334155' : '#6b7280'
+                          padding: '14px 16px',
+                          textAlign: 'center',
+                          borderBottom: '1px solid #e5e7eb'
                         }}>
                           <div style={{
-                            width: '32px',
-                            height: '32px',
+                            width: '28px',
+                            height: '28px',
                             borderRadius: '50%',
-                            background: isTop3 ? '#334155' : '#e5e7eb',
+                            background: isTop3 ? '#111827' : '#f3f4f6',
                             color: isTop3 ? 'white' : '#6b7280',
-                            display: 'flex',
+                            display: 'inline-flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            fontSize: '14px',
-                            fontWeight: '700'
+                            fontSize: '13px',
+                            fontWeight: '600',
+                            margin: '0 auto'
                           }}>
                             {employee.rank}
                           </div>
                         </td>
                         <td style={{
-                          padding: '16px',
-                          fontWeight: '500',
-                          color: '#1a1a1a'
+                          padding: '14px 16px',
+                          borderBottom: '1px solid #e5e7eb',
+                          borderLeft: '1px solid #e5e7eb'
                         }}>
                           <div>
-                            <div style={{ fontWeight: '600', marginBottom: '2px' }}>
+                            <div style={{ 
+                              fontWeight: '600', 
+                              fontSize: '14px',
+                              color: '#111827',
+                              marginBottom: '2px'
+                            }}>
                               {employee.name}
                             </div>
                             {employee.email && (
-                              <div style={{ fontSize: '12px', color: '#6b7280' }}>
+                              <div style={{ 
+                                fontSize: '12px', 
+                                color: '#6b7280',
+                                fontWeight: '400'
+                              }}>
                                 {employee.email}
                               </div>
                             )}
                           </div>
                         </td>
                         <td style={{
-                          padding: '16px',
+                          padding: '14px 16px',
                           textAlign: 'right',
-                          color: '#334155',
-                          fontWeight: '600'
+                          borderBottom: '1px solid #e5e7eb',
+                          borderLeft: '1px solid #e5e7eb',
+                          fontSize: '14px',
+                          fontWeight: '500',
+                          color: '#111827'
                         }}>
                           {employee.productsCount.toLocaleString()}
                         </td>
                         <td style={{
-                          padding: '16px',
+                          padding: '14px 16px',
                           textAlign: 'right',
-                          color: '#334155',
-                          fontWeight: '600'
+                          borderBottom: '1px solid #e5e7eb',
+                          borderLeft: '1px solid #e5e7eb',
+                          fontSize: '14px',
+                          fontWeight: '500',
+                          color: '#111827'
                         }}>
                           {employee.orders.toLocaleString()}
                         </td>
                         <td style={{
-                          padding: '16px',
+                          padding: '14px 16px',
                           textAlign: 'right',
-                          color: '#1a1a1a',
-                          fontWeight: '700',
-                          fontSize: '16px'
+                          borderBottom: '1px solid #e5e7eb',
+                          borderLeft: '1px solid #e5e7eb',
+                          fontSize: '14px',
+                          fontWeight: '600',
+                          color: '#111827'
                         }}>
                           ${employee.totalSales.toLocaleString()}
                         </td>
                         <td style={{
-                          padding: '16px',
+                          padding: '14px 16px',
                           textAlign: 'right',
-                          color: '#334155',
-                          fontWeight: '500'
+                          borderBottom: '1px solid #e5e7eb',
+                          borderLeft: '1px solid #e5e7eb',
+                          fontSize: '14px',
+                          fontWeight: '500',
+                          color: '#6b7280'
                         }}>
                           ${employee.avgOrderValue}
                         </td>
                         <td style={{
-                          padding: '16px',
+                          padding: '14px 16px',
                           textAlign: 'right',
-                          fontWeight: '700',
-                          fontSize: '16px'
+                          borderBottom: '1px solid #e5e7eb',
+                          borderLeft: '1px solid #e5e7eb'
                         }}>
-                          <div style={{
-                            color: '#16a34a'
+                          <span style={{
+                            color: '#059669',
+                            fontSize: '14px',
+                            fontWeight: '600',
+                            background: '#d1fae5',
+                            padding: '4px 8px',
+                            borderRadius: '6px',
+                            display: 'inline-block'
                           }}>
                             ${employee.commission.toLocaleString()}
-                          </div>
+                          </span>
                         </td>
                         <td style={{
-                          padding: '16px',
+                          padding: '14px 16px',
                           textAlign: 'center',
-                          fontSize: '12px',
-                          color: '#6b7280'
+                          borderBottom: '1px solid #e5e7eb',
+                          borderLeft: '1px solid #e5e7eb'
                         }}>
                           <div style={{
                             background: '#f3f4f6',
                             borderRadius: '6px',
-                            padding: '6px 10px',
-                            whiteSpace: 'nowrap',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            maxWidth: '150px',
-                            margin: '0 auto'
+                            padding: '4px 12px',
+                            fontSize: '12px',
+                            color: '#6b7280',
+                            fontWeight: '500',
+                            display: 'inline-block'
                           }}>
-                            {employee.locationsCount} sucursal{employee.locationsCount !== 1 ? 'es' : ''}
+                            {employee.locationsCount} {employee.locationsCount !== 1 ? 'sucursales' : 'sucursal'}
                           </div>
                         </td>
                       </tr>
@@ -1415,55 +1581,79 @@ export default function DashboardNuevo() {
                   {/* Fila de totales */}
                   <tr style={{
                     borderTop: '2px solid #e5e7eb',
-                    background: '#1e293b',
-                    fontWeight: '600',
-                    color: 'white'
+                    background: '#f9fafb',
+                    position: 'sticky',
+                    bottom: 0
                   }}>
                     <td colSpan={2} style={{
-                      padding: '16px',
-                      color: 'white'
+                      padding: '14px 16px',
+                      color: '#6b7280',
+                      fontSize: '12px',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em',
+                      fontWeight: '500',
+                      borderLeft: '1px solid #e5e7eb'
                     }}>
-                      TOTALES
+                      Totales
                     </td>
                     <td style={{
-                      padding: '16px',
+                      padding: '14px 16px',
                       textAlign: 'right',
-                      color: 'white'
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      color: '#111827',
+                      borderLeft: '1px solid #e5e7eb'
                     }}>
                       {topEmployees?.reduce((sum, e) => sum + e.productsCount, 0).toLocaleString() || '0'}
                     </td>
                     <td style={{
-                      padding: '16px',
+                      padding: '14px 16px',
                       textAlign: 'right',
-                      color: 'white'
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      color: '#111827',
+                      borderLeft: '1px solid #e5e7eb'
                     }}>
                       {topEmployees?.reduce((sum, e) => sum + e.orders, 0).toLocaleString() || '0'}
                     </td>
                     <td style={{
-                      padding: '16px',
+                      padding: '14px 16px',
                       textAlign: 'right',
-                      color: 'white',
-                      fontSize: '18px'
+                      fontSize: '14px',
+                      fontWeight: '700',
+                      color: '#111827',
+                      borderLeft: '1px solid #e5e7eb'
                     }}>
                       ${topEmployees?.reduce((sum, e) => sum + e.totalSales, 0).toLocaleString() || '0'}
                     </td>
                     <td style={{
-                      padding: '16px',
-                      textAlign: 'right',
-                      color: 'white'
+                      padding: '14px 16px',
+                      textAlign: 'center',
+                      color: '#6b7280',
+                      borderLeft: '1px solid #e5e7eb'
                     }}>
-                      -
+                      —
                     </td>
                     <td style={{
-                      padding: '16px',
+                      padding: '14px 16px',
                       textAlign: 'right',
-                      color: 'white',
-                      fontSize: '18px'
+                      borderLeft: '1px solid #e5e7eb'
                     }}>
-                      ${topEmployees?.reduce((sum, e) => sum + e.commission, 0).toFixed(2) || '0'}
+                      <span style={{
+                        color: '#059669',
+                        fontSize: '14px',
+                        fontWeight: '700',
+                        background: '#d1fae5',
+                        padding: '4px 8px',
+                        borderRadius: '6px',
+                        display: 'inline-block'
+                      }}>
+                        ${topEmployees?.reduce((sum, e) => sum + e.commission, 0).toFixed(2) || '0'}
+                      </span>
                     </td>
                     <td style={{
-                      padding: '16px'
+                      padding: '14px 16px',
+                      borderLeft: '1px solid #e5e7eb'
                     }}>
                     </td>
                   </tr>
