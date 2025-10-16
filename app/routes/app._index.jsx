@@ -97,6 +97,12 @@ export const loader = async ({ request }) => {
                     node {
                       title
                       quantity
+                      originalTotalSet {
+                        shopMoney {
+                          amount
+                          currencyCode
+                        }
+                      }
                       variant {
                         id
                         sku
@@ -482,6 +488,9 @@ export const loader = async ({ request }) => {
           const productTitle = item.node.variant?.product?.title || item.node.title || 'Sin nombre';
           const sku = item.node.variant?.sku || '';
           
+          // Obtener el precio REAL del lineItem (CORREGIDO)
+          const itemRevenue = parseFloat(item.node.originalTotalSet?.shopMoney?.amount || 0);
+          
           // Contar productos para el empleado - DESHABILITADO
           
           // Métricas por ubicación
@@ -509,10 +518,8 @@ export const loader = async ({ request }) => {
           globalTopProducts[productId].orders += 1;
           globalTopProducts[productId].locations.add(locationName);
           
-          // Calcular revenue aproximado (dividiendo el total de la orden entre items)
-          const itemsInOrder = order.node.lineItems.edges.length;
-          const estimatedItemRevenue = orderAmount / itemsInOrder;
-          globalTopProducts[productId].revenue += estimatedItemRevenue;
+          // Usar el precio REAL del item (CORREGIDO - antes dividía equitativamente)
+          globalTopProducts[productId].revenue += itemRevenue;
         });
       }
     });
@@ -567,6 +574,7 @@ export const loader = async ({ request }) => {
     
     // Procesar datos de empleados desde las notas de las órdenes
     const employeeMetrics = {};
+    console.log(`Processing ${currentPeriodOrders.length} orders for employee metrics`);
     
     currentPeriodOrders.forEach(order => {
       // Buscar nombre del empleado en las notas o tags
@@ -575,17 +583,30 @@ export const loader = async ({ request }) => {
       // Si tiene ubicación física, asignar un empleado genérico por ubicación
       if (order.node.physicalLocation) {
         const locationName = order.node.physicalLocation.name;
+        console.log(`Order location: ${locationName}`);
+        
         // Asignar empleados por tienda basado en patrones consistentes
+        // Actualiza estos nombres para que coincidan con tus tiendas reales
         const locationEmployees = {
           'Pitagora': ['María R.', 'Juan P.', 'Ana G.'],
           'Curetshop Pitagora': ['Carlos L.', 'Sofia M.'],
           'Curetshop Buen Precio': ['Luis H.', 'Carmen D.'],
           'Curetshop Hermanas Mirabal': ['Pedro S.', 'Laura V.'],
           'Curetshop Puro Ahorro': ['Miguel A.', 'Rosa T.'],
-          'Curetshop Villa del Centro': ['Diego F.', 'Patricia B.']
+          'Curetshop Villa del Centro': ['Diego F.', 'Patricia B.'],
+          'Buen Precio': ['Luis H.', 'Carmen D.'],
+          'Hermanas Mirabal': ['Pedro S.', 'Laura V.'],
+          'Puro Ahorro': ['Miguel A.', 'Rosa T.'],
+          'Villa del Centro': ['Diego F.', 'Patricia B.']
         };
         
-        const employees = locationEmployees[locationName] || ['Vendedor Tienda'];
+        // Si no encuentra la tienda, usar empleados genéricos
+        const employees = locationEmployees[locationName] || [
+          `${locationName} - Vendedor 1`,
+          `${locationName} - Vendedor 2`,
+          `${locationName} - Vendedor 3`
+        ];
+        
         // Usar hash del ID de orden para asignar consistentemente
         const hash = order.node.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
         employeeName = employees[hash % employees.length];
@@ -613,6 +634,8 @@ export const loader = async ({ request }) => {
     });
     
     // Convertir a array y ordenar por ventas
+    console.log('Employee metrics before conversion:', employeeMetrics);
+    
     const topEmployees = Object.values(employeeMetrics)
       .map(emp => ({
         id: `emp-${emp.name}`,
@@ -626,6 +649,8 @@ export const loader = async ({ request }) => {
       .sort((a, b) => b.totalSales - a.totalSales)
       .slice(0, 10)
       .map((emp, index) => ({ ...emp, rank: index + 1 }));
+    
+    console.log(`Total employees processed: ${topEmployees.length}`);
     
     // Contar total de productos únicos
     const totalProducts = products.length;
