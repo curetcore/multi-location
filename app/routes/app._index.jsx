@@ -343,29 +343,31 @@ export const loader = async ({ request }) => {
       const locationName = order.node.physicalLocation?.name || 'Online';
       const orderAmount = parseFloat(order.node.currentTotalPriceSet?.shopMoney?.amount || 0);
       
-      // Procesar métricas de empleado
-      const employeeId = order.node.user?.id || 'unknown';
-      const employeeName = order.node.user?.displayName || 'Sin asignar';
-      const employeeEmail = order.node.user?.email || '';
-      
-      if (!employeeMetrics[employeeId]) {
-        employeeMetrics[employeeId] = {
-          id: employeeId,
-          name: employeeName,
-          email: employeeEmail,
-          orders: 0,
-          totalSales: 0,
-          productsCount: 0,
-          commission: 0,
-          locations: new Set()
-        };
-      }
-      
-      employeeMetrics[employeeId].orders += 1;
-      employeeMetrics[employeeId].totalSales += orderAmount;
-      employeeMetrics[employeeId].commission = employeeMetrics[employeeId].totalSales * 0.01; // 1% commission
-      if (locationName) {
-        employeeMetrics[employeeId].locations.add(locationName);
+      // Procesar métricas de empleado solo si hay datos
+      if (order.node.user || true) { // Siempre procesar, aunque no haya usuario
+        const employeeId = order.node.user?.id || 'unknown';
+        const employeeName = order.node.user?.displayName || 'Sin asignar';
+        const employeeEmail = order.node.user?.email || '';
+        
+        if (!employeeMetrics[employeeId]) {
+          employeeMetrics[employeeId] = {
+            id: employeeId,
+            name: employeeName,
+            email: employeeEmail,
+            orders: 0,
+            totalSales: 0,
+            productsCount: 0,
+            commission: 0,
+            locations: new Set()
+          };
+        }
+        
+        employeeMetrics[employeeId].orders += 1;
+        employeeMetrics[employeeId].totalSales += orderAmount;
+        employeeMetrics[employeeId].commission = employeeMetrics[employeeId].totalSales * 0.01; // 1% commission
+        if (locationName) {
+          employeeMetrics[employeeId].locations.add(locationName);
+        }
       }
       
       if (locationId && locationMetrics[locationId]) {
@@ -378,8 +380,10 @@ export const loader = async ({ request }) => {
           const productTitle = item.node.title || 'Sin nombre';
           const productTitleClean = item.node.variant?.product?.title || productTitle;
           
-          // Contar productos para el empleado
-          employeeMetrics[employeeId].productsCount += quantity;
+          // Contar productos para el empleado si existe
+          if (employeeMetrics[employeeId]) {
+            employeeMetrics[employeeId].productsCount += quantity;
+          }
           
           // Métricas por ubicación
           locationMetrics[locationId].unitsSold += quantity;
@@ -510,6 +514,10 @@ export const loader = async ({ request }) => {
     return {
       shop: null,
       locations: [],
+      productsList: [],
+      locationMetrics: [],
+      top9Products: [],
+      topEmployees: [],
       metrics: {
         totalSales: 0,
         totalOrders: 0,
@@ -527,7 +535,7 @@ export const loader = async ({ request }) => {
         topLocation: { name: 'Sin datos', sales: 0 }
       },
       inventoryByLocation: [],
-      currentPeriod: '30d',
+      currentPeriod: period || '30d',
       lastUpdate: new Date().toISOString()
     };
   }
