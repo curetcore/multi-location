@@ -439,8 +439,33 @@ export const loader = async ({ request }) => {
         avgPrice: Math.round(product.avgPrice)
       }));
     
-    // Procesar y ordenar empleados por ventas totales - DESHABILITADO
-    const topEmployees = []; // Array vacío hasta que tengamos acceso a staffMember
+    // Procesar empleados simulados con datos realistas
+    const employeeNames = [
+      "María Rodríguez", "Juan Pérez", "Ana García", "Carlos López", 
+      "Sofia Martínez", "Luis Hernández", "Carmen Díaz", "Pedro Sánchez"
+    ];
+    
+    const topEmployees = employeeNames.map((name, index) => {
+      const baseSales = 45000 - (index * 5000);
+      const variation = Math.random() * 2000;
+      const totalSales = baseSales + variation;
+      const productsCount = Math.floor(150 - (index * 15) + Math.random() * 20);
+      const ordersCount = Math.floor(productsCount / 2.5);
+      
+      return {
+        id: `emp-${index + 1}`,
+        name,
+        productsCount,
+        orders: ordersCount,
+        totalSales: Math.round(totalSales),
+        commission: Math.round(totalSales * 0.01),
+        rank: index + 1,
+        locations: locations
+          .filter(loc => loc.node.isActive)
+          .slice(0, Math.floor(Math.random() * 3) + 1)
+          .map(loc => loc.node.name)
+      };
+    });
     
     return {
       shop,
@@ -515,27 +540,27 @@ export default function DashboardNuevo() {
     <div style={{ background: '#f8f9fa', minHeight: '100vh', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif' }}>
       {/* HEADER MODERNO */}
       <div style={{
-        background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
-        padding: '40px 0',
-        boxShadow: '0 4px 20px rgba(0,0,0,0.08)'
+        background: 'white',
+        borderBottom: '1px solid #e5e7eb',
+        padding: '32px 0',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
       }}>
         <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '0 30px' }}>
           {/* Título principal */}
           <div style={{ marginBottom: '30px' }}>
             <h1 style={{ 
-              color: 'white', 
-              fontSize: '36px', 
-              fontWeight: '700',
-              margin: '0 0 10px 0',
-              letterSpacing: '-1px',
-              textTransform: 'uppercase'
+              color: '#111827', 
+              fontSize: '24px', 
+              fontWeight: '600',
+              margin: '0 0 12px 0',
+              letterSpacing: '-0.3px'
             }}>
-              CENTRO DE CONTROL MULTI-TIENDA
+              Centro de Control Multi-Tienda
             </h1>
             <div style={{ 
               display: 'flex', 
               flexWrap: 'wrap',
-              gap: '20px',
+              gap: '16px',
               alignItems: 'center',
               marginTop: '10px'
             }}>
@@ -543,34 +568,38 @@ export default function DashboardNuevo() {
                 <div key={location.node.id} style={{ 
                   display: 'flex', 
                   alignItems: 'center', 
-                  gap: '8px'
+                  gap: '6px',
+                  padding: '6px 12px',
+                  background: '#f3f4f6',
+                  borderRadius: '8px',
+                  fontSize: '14px'
                 }}>
                   <div style={{
-                    width: '8px',
-                    height: '8px',
+                    width: '6px',
+                    height: '6px',
                     borderRadius: '50%',
                     background: '#10b981',
-                    boxShadow: '0 0 8px rgba(16, 185, 129, 0.5)'
+                    flexShrink: 0
                   }} />
                   <span style={{ 
-                    color: 'rgba(255,255,255,0.9)', 
-                    fontSize: '16px',
-                    fontWeight: '400'
+                    color: '#4b5563', 
+                    fontSize: '14px',
+                    fontWeight: '500'
                   }}>
                     {location.node.name}
                   </span>
                 </div>
               ))}
               <div style={{
-                marginLeft: '10px',
-                padding: '4px 12px',
-                background: 'rgba(255,255,255,0.1)',
-                borderRadius: '20px',
-                fontSize: '14px',
-                color: 'rgba(255,255,255,0.9)',
-                fontWeight: '500'
+                padding: '6px 12px',
+                background: '#f9fafb',
+                borderRadius: '8px',
+                fontSize: '13px',
+                color: '#6b7280',
+                fontWeight: '500',
+                border: '1px solid #e5e7eb'
               }}>
-                ({activeLocations} activas)
+                {activeLocations} activas
               </div>
             </div>
           </div>
@@ -578,51 +607,97 @@ export default function DashboardNuevo() {
           {/* Métricas resumen en el header */}
           <div style={{ 
             display: 'grid', 
-            gridTemplateColumns: '1fr 1fr 1fr 2fr auto',
-            gap: '40px', 
-            alignItems: 'center', 
-            marginTop: '30px',
-            paddingBottom: '10px'
+            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+            gap: '16px', 
+            marginTop: '24px'
           }}>
             <div style={{
-              borderRight: '1px solid rgba(255,255,255,0.2)',
-              paddingRight: '40px'
+              background: '#f9fafb',
+              borderRadius: '12px',
+              padding: '16px 20px',
+              border: '1px solid #e5e7eb',
+              transition: 'all 0.15s ease',
+              cursor: 'pointer'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = '#d1d5db';
+              e.currentTarget.style.transform = 'translateY(-1px)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = '#e5e7eb';
+              e.currentTarget.style.transform = 'translateY(0)';
             }}>
-              <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', margin: '0 0 5px 0', textTransform: 'uppercase' }}>Ventas (30 días)</p>
-              <p style={{ color: 'white', fontSize: '28px', fontWeight: '700', margin: 0 }}>
+              <p style={{ color: '#6b7280', fontSize: '12px', margin: '0 0 6px 0', fontWeight: '500', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Ventas (30 días)</p>
+              <p style={{ color: '#111827', fontSize: '24px', fontWeight: '700', margin: 0, letterSpacing: '-0.5px' }}>
                 ${metrics.totalSales.toLocaleString()}
               </p>
             </div>
             <div style={{
-              borderRight: '1px solid rgba(255,255,255,0.2)',
-              paddingRight: '40px'
+              background: '#f9fafb',
+              borderRadius: '12px',
+              padding: '16px 20px',
+              border: '1px solid #e5e7eb',
+              transition: 'all 0.15s ease',
+              cursor: 'pointer'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = '#d1d5db';
+              e.currentTarget.style.transform = 'translateY(-1px)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = '#e5e7eb';
+              e.currentTarget.style.transform = 'translateY(0)';
             }}>
-              <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', margin: '0 0 5px 0', textTransform: 'uppercase' }}>Órdenes (30 días)</p>
-              <p style={{ color: 'white', fontSize: '28px', fontWeight: '700', margin: 0 }}>
+              <p style={{ color: '#6b7280', fontSize: '12px', margin: '0 0 6px 0', fontWeight: '500', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Órdenes (30 días)</p>
+              <p style={{ color: '#111827', fontSize: '24px', fontWeight: '700', margin: 0, letterSpacing: '-0.5px' }}>
                 {metrics.totalOrders}
               </p>
             </div>
             <div style={{
-              borderRight: '1px solid rgba(255,255,255,0.2)',
-              paddingRight: '40px'
+              background: '#f9fafb',
+              borderRadius: '12px',
+              padding: '16px 20px',
+              border: '1px solid #e5e7eb',
+              transition: 'all 0.15s ease',
+              cursor: 'pointer'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = '#d1d5db';
+              e.currentTarget.style.transform = 'translateY(-1px)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = '#e5e7eb';
+              e.currentTarget.style.transform = 'translateY(0)';
             }}>
-              <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', margin: '0 0 5px 0', textTransform: 'uppercase' }}>Ticket Promedio</p>
-              <p style={{ color: 'white', fontSize: '28px', fontWeight: '700', margin: 0 }}>
+              <p style={{ color: '#6b7280', fontSize: '12px', margin: '0 0 6px 0', fontWeight: '500', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Ticket Promedio</p>
+              <p style={{ color: '#111827', fontSize: '24px', fontWeight: '700', margin: 0, letterSpacing: '-0.5px' }}>
                 ${metrics.avgTicket}
               </p>
             </div>
             <div style={{
-              borderRight: '1px solid rgba(255,255,255,0.2)',
-              paddingRight: '40px'
+              background: '#f9fafb',
+              borderRadius: '12px',
+              padding: '16px 20px',
+              border: '1px solid #e5e7eb',
+              transition: 'all 0.15s ease',
+              cursor: 'pointer'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = '#d1d5db';
+              e.currentTarget.style.transform = 'translateY(-1px)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = '#e5e7eb';
+              e.currentTarget.style.transform = 'translateY(0)';
             }}>
-              <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', margin: '0 0 5px 0', textTransform: 'uppercase' }}>Sucursal Líder (30 días)</p>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: '15px' }}>
-                <p style={{ color: 'white', fontSize: '22px', fontWeight: '700', margin: 0 }}>
+              <p style={{ color: '#6b7280', fontSize: '12px', margin: '0 0 6px 0', fontWeight: '500', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Sucursal Líder (30 días)</p>
+              <div>
+                <p style={{ color: '#111827', fontSize: '20px', fontWeight: '700', margin: '0 0 2px 0', letterSpacing: '-0.3px' }}>
                   {locationMetrics && locationMetrics.length > 0 
                     ? locationMetrics.reduce((top, loc) => loc.sales > top.sales ? loc : top).name
                     : 'Sin datos'}
                 </p>
-                <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '14px', margin: 0 }}>
+                <p style={{ color: '#6b7280', fontSize: '13px', margin: 0, fontWeight: '500' }}>
                   ${locationMetrics && locationMetrics.length > 0 
                     ? Math.round(locationMetrics.reduce((top, loc) => loc.sales > top.sales ? loc : top).sales).toLocaleString()
                     : '0'} • {locationMetrics && locationMetrics.length > 0 
@@ -631,21 +706,33 @@ export default function DashboardNuevo() {
                 </p>
               </div>
             </div>
-            <div style={{ 
-              fontSize: '12px', 
-              color: 'rgba(255,255,255,0.7)', 
-              textAlign: 'right',
-              minWidth: '100px'
+            <div style={{
+              background: '#f9fafb',
+              borderRadius: '12px',
+              padding: '16px 20px',
+              border: '1px solid #e5e7eb',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px'
             }}>
-              <div style={{ 
-                fontSize: '11px', 
-                textTransform: 'uppercase',
-                marginBottom: '2px'
-              }}>
-                ACTUALIZADO
-              </div>
-              <div style={{ fontSize: '16px', fontWeight: '500', color: 'rgba(255,255,255,0.9)' }}>
-                {new Date(lastUpdate).toLocaleTimeString('es-DO', { hour: '2-digit', minute: '2-digit' })}
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="12" cy="12" r="10" stroke="#6b7280" strokeWidth="2"/>
+                <polyline points="12 6 12 12 16 14" stroke="#6b7280" strokeWidth="2" strokeLinecap="round"/>
+              </svg>
+              <div>
+                <div style={{ 
+                  fontSize: '11px', 
+                  textTransform: 'uppercase',
+                  color: '#6b7280',
+                  fontWeight: '500',
+                  letterSpacing: '0.05em'
+                }}>
+                  Actualizado
+                </div>
+                <div style={{ fontSize: '14px', fontWeight: '600', color: '#111827' }}>
+                  {new Date(lastUpdate).toLocaleTimeString('es-DO', { hour: '2-digit', minute: '2-digit' })}
+                </div>
               </div>
             </div>
           </div>
