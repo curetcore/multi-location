@@ -91,7 +91,7 @@ export const loader = async ({ request }) => {
     const ordersData = await ordersResponse.json();
     const orders = ordersData.data?.orders?.edges || [];
     
-    // 4. Obtener inventario total
+    // 4. Obtener inventario total y por ubicación
     const inventoryResponse = await admin.graphql(
       `#graphql
         query getInventory {
@@ -101,10 +101,15 @@ export const loader = async ({ request }) => {
                 variants(first: 10) {
                   edges {
                     node {
+                      price
                       inventoryItem {
                         inventoryLevels(first: 10) {
                           edges {
                             node {
+                              location {
+                                id
+                                name
+                              }
                               quantities(names: ["available"]) {
                                 name
                                 quantity
@@ -195,16 +200,35 @@ export const loader = async ({ request }) => {
     const ordersChange = previousOrders > 0 ? ((totalOrders - previousOrders) / previousOrders) * 100 : 0;
     const avgTicketChange = previousAvgTicket > 0 ? ((avgTicket - previousAvgTicket) / previousAvgTicket) * 100 : 0;
     
-    // Calcular inventario total
+    // Calcular inventario total y por ubicación
     let totalInventory = 0;
-    let previousInventory = 0; // Por ahora no tenemos histórico de inventario
+    const inventoryByLocation = {};
+    let totalInventoryValue = 0;
     
     products.forEach(product => {
       product.node.variants.edges.forEach(variant => {
+        const price = parseFloat(variant.node.price || 0);
         variant.node.inventoryItem?.inventoryLevels?.edges?.forEach(level => {
           const availableQty = level.node.quantities?.find(q => q.name === 'available');
-          if (availableQty) {
-            totalInventory += availableQty.quantity;
+          const locationId = level.node.location?.id;
+          const locationName = level.node.location?.name || 'Sin ubicación';
+          
+          if (availableQty && availableQty.quantity > 0) {
+            const quantity = availableQty.quantity;
+            totalInventory += quantity;
+            totalInventoryValue += quantity * price;
+            
+            if (!inventoryByLocation[locationId]) {
+              inventoryByLocation[locationId] = {
+                id: locationId,
+                name: locationName,
+                quantity: 0,
+                value: 0
+              };
+            }
+            
+            inventoryByLocation[locationId].quantity += quantity;
+            inventoryByLocation[locationId].value += quantity * price;
           }
         });
       });
@@ -232,6 +256,7 @@ export const loader = async ({ request }) => {
         avgTicket: Math.round(todayAvgTicket),
         topLocation: topLocation
       },
+      inventoryByLocation: Object.values(inventoryByLocation),
       currentPeriod: period,
       lastUpdate: new Date().toISOString()
     };
@@ -257,6 +282,7 @@ export const loader = async ({ request }) => {
         avgTicket: 0,
         topLocation: { name: 'Sin datos', sales: 0 }
       },
+      inventoryByLocation: [],
       currentPeriod: '30d',
       lastUpdate: new Date().toISOString()
     };
@@ -264,7 +290,7 @@ export const loader = async ({ request }) => {
 };
 
 export default function DashboardNuevo() {
-  const { shop, locations, metrics, todayMetrics, currentPeriod, lastUpdate } = useLoaderData();
+  const { shop, locations, metrics, todayMetrics, inventoryByLocation, currentPeriod, lastUpdate } = useLoaderData();
   const navigate = useNavigate();
   const [selectedPeriod, setSelectedPeriod] = useState(currentPeriod || '30d');
   
@@ -638,6 +664,148 @@ export default function DashboardNuevo() {
           </div>
         </div>
 
+        {/* VALOR DE INVENTARIO POR SUCURSAL */}
+        <div style={{ marginBottom: '30px' }}>
+          <h2 style={{ 
+            fontSize: '24px', 
+            fontWeight: '600', 
+            marginBottom: '20px',
+            color: '#1a1a1a'
+          }}>
+            Valor de Inventario por Sucursal
+          </h2>
+          
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: `repeat(${Math.min(inventoryByLocation.length || locations.length, 4)}, 1fr)`, 
+            gap: '16px',
+            gridAutoRows: 'minmax(100px, auto)'
+          }}>
+            {(inventoryByLocation.length > 0 ? inventoryByLocation : locations).slice(0, 8).map((item, index) => {
+              // Usar datos reales si están disponibles, si no, usar estimados
+              const isRealData = inventoryByLocation.length > 0;
+              const locationData = isRealData ? item : item.node;
+              const locationName = isRealData ? item.name : locationData.name;
+              const locationQuantity = isRealData ? item.quantity : Math.round(metrics.totalInventory / locations.length);
+              const locationValue = isRealData ? Math.round(item.value) : locationQuantity * 85;
+              
+              // Colores para cada sucursal - paleta más suave
+              const colors = ['#1e293b', '#475569', '#64748b', '#94a3b8', '#334155', '#475569', '#64748b', '#94a3b8'];
+              const bgColor = colors[index % colors.length];
+              
+              return (
+                <div 
+                  key={isRealData ? item.id : locationData.id}
+                  style={{
+                    background: 'white',
+                    borderRadius: '12px',
+                    padding: '20px',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+                    border: '1px solid #e5e7eb',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    transition: 'transform 0.2s ease',
+                    cursor: 'pointer'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.05)';
+                  }}
+                >
+                  {/* Barra de color superior */}
+                  <div style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    height: '4px',
+                    background: bgColor
+                  }} />
+                  
+                  {/* Ícono de sucursal */}
+                  <div style={{
+                    width: '40px',
+                    height: '40px',
+                    background: `linear-gradient(135deg, ${bgColor}20 0%, ${bgColor}10 100%)`,
+                    borderRadius: '10px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginBottom: '12px'
+                  }}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M12 2L2 7V12C2 16.55 4.84 20.74 9 22.05V19.94C5.91 18.57 4 15.04 4 12V8.18L12 4.44L20 8.18V12C20 12.19 19.99 12.37 19.98 12.56C20.64 12.98 21.21 13.55 21.63 14.21C21.86 13.53 22 12.79 22 12V7L12 2Z" fill={bgColor}/>
+                      <path d="M18 15C16.89 15 16 15.89 16 17V22H18V20H20V22H22V17C22 15.89 21.11 15 20 15H18Z" fill={bgColor}/>
+                    </svg>
+                  </div>
+                  
+                  {/* Nombre de sucursal */}
+                  <h3 style={{
+                    fontSize: '16px',
+                    fontWeight: '600',
+                    color: '#1a1a1a',
+                    margin: '0 0 4px 0',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis'
+                  }}>
+                    {locationName}
+                  </h3>
+                  
+                  {/* Cantidad de productos */}
+                  <p style={{
+                    fontSize: '14px',
+                    color: '#6b7280',
+                    margin: '0 0 12px 0'
+                  }}>
+                    {locationQuantity.toLocaleString()} productos
+                  </p>
+                  
+                  {/* Valor estimado */}
+                  <p style={{
+                    fontSize: '20px',
+                    fontWeight: '700',
+                    color: bgColor,
+                    margin: 0
+                  }}>
+                    ${locationValue.toLocaleString()}
+                  </p>
+                  
+                  {/* Estado */}
+                  <div style={{
+                    position: 'absolute',
+                    top: '12px',
+                    right: '12px',
+                    width: '8px',
+                    height: '8px',
+                    borderRadius: '50%',
+                    background: (isRealData || locationData.isActive) ? '#10b981' : '#ef4444'
+                  }} />
+                </div>
+              );
+            })}
+          </div>
+          
+          {/* Mensaje si no hay sucursales */}
+          {locations.length === 0 && inventoryByLocation.length === 0 && (
+            <div style={{
+              background: '#f9fafb',
+              border: '1px dashed #e5e7eb',
+              borderRadius: '12px',
+              padding: '40px',
+              textAlign: 'center'
+            }}>
+              <p style={{ color: '#6b7280', margin: 0 }}>
+                No hay sucursales configuradas
+              </p>
+            </div>
+          )}
+        </div>
+
         {/* Placeholder para próximas secciones */}
         <div style={{
           background: 'white',
@@ -647,7 +815,7 @@ export default function DashboardNuevo() {
           boxShadow: '0 2px 10px rgba(0,0,0,0.05)'
         }}>
           <h3 style={{ color: '#6b7280', marginBottom: '10px' }}>Próxima sección: Gráficas de rendimiento</h3>
-          <p style={{ color: '#6b7280' }}>KPIs implementados. Las gráficas se agregarán a continuación.</p>
+          <p style={{ color: '#6b7280' }}>Sección de inventario implementada. Las gráficas se agregarán a continuación.</p>
         </div>
       </div>
     </div>
