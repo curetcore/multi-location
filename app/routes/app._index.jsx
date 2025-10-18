@@ -65,7 +65,7 @@ export const loader = async ({ request }) => {
     const ordersPerPage = 250;
     
     while (hasNextPage && allOrders.length < maxOrders) {
-      // Simplificada: eliminar staffMember que puede causar problemas de permisos
+      // Incluye physicalLocation para asignar órdenes a sucursales correctas
       const ordersQuery = `#graphql
         query getRecentOrders($first: Int!, $after: String) {
           orders(first: $first, after: $after, reverse: true) {
@@ -89,6 +89,10 @@ export const loader = async ({ request }) => {
                 createdAt
                 cancelledAt
                 displayFinancialStatus
+                physicalLocation {
+                  id
+                  name
+                }
                 lineItems(first: 50) {
                   edges {
                     node {
@@ -334,12 +338,21 @@ export const loader = async ({ request }) => {
     const todayOrdersCount = todayOrders.length;
     const todayAvgTicket = todayOrdersCount > 0 ? todaySales / todayOrdersCount : 0;
     
-    // NOTA: physicalLocation removido de la consulta para evitar errores
-    // Todas las ventas se consideran "Online" por ahora
-    const topLocation = {
-      name: todayOrdersCount > 0 ? 'Ventas Totales' : 'Sin ventas',
-      sales: todaySales
-    };
+    // Calcular ventas por ubicación para hoy
+    const salesByLocation = {};
+    todayOrders.forEach(order => {
+      const locationName = order.node.physicalLocation?.name || 'Online';
+      const amount = parseFloat(order.node.currentTotalPriceSet?.shopMoney?.amount || 0);
+      salesByLocation[locationName] = (salesByLocation[locationName] || 0) + amount;
+    });
+
+    // Encontrar la sucursal con más ventas hoy
+    let topLocation = { name: 'Sin ventas', sales: 0 };
+    Object.entries(salesByLocation).forEach(([name, sales]) => {
+      if (sales > topLocation.sales) {
+        topLocation = { name, sales };
+      }
+    });
     
     // Calcular métricas del período actual según el período seleccionado
     const periodStartDate = new Date();
@@ -537,18 +550,16 @@ export const loader = async ({ request }) => {
     // const employeeMetrics = {}; // DESHABILITADO - staffMember no disponible
     
     // Procesar órdenes para calcular métricas por ubicación y productos globales
-    // NOTA: physicalLocation y staffMember removidos para evitar errores
     currentPeriodOrders.forEach(order => {
+      const locationId = order.node.physicalLocation?.id;
+      const locationName = order.node.physicalLocation?.name || 'Online';
       const orderAmount = parseFloat(order.node.currentTotalPriceSet?.shopMoney?.amount || 0);
 
-      // TODO: Re-agregar physicalLocation cuando se confirme que funciona
-      // Por ahora todas las órdenes van a la primera ubicación si existe
-      const firstLocationId = locations.length > 0 ? locations[0].node.id : null;
+      // Solo procesar si la orden tiene una ubicación física registrada
+      if (locationId && locationMetrics[locationId]) {
+        locationMetrics[locationId].sales += orderAmount;
+        locationMetrics[locationId].orders += 1;
 
-      if (firstLocationId && locationMetrics[firstLocationId]) {
-        locationMetrics[firstLocationId].sales += orderAmount;
-        locationMetrics[firstLocationId].orders += 1;
-        
         // Procesar items de la orden
         order.node.lineItems?.edges?.forEach(item => {
           const quantity = item.node.quantity || 0;
@@ -560,13 +571,13 @@ export const loader = async ({ request }) => {
           const itemRevenue = parseFloat(item.node.originalTotalSet?.shopMoney?.amount || 0);
 
           // Métricas por ubicación
-          locationMetrics[firstLocationId].unitsSold += quantity;
+          locationMetrics[locationId].unitsSold += quantity;
 
           // Track top products por ubicación
-          if (!locationMetrics[firstLocationId].topProducts[productTitle]) {
-            locationMetrics[firstLocationId].topProducts[productTitle] = 0;
+          if (!locationMetrics[locationId].topProducts[productTitle]) {
+            locationMetrics[locationId].topProducts[productTitle] = 0;
           }
-          locationMetrics[firstLocationId].topProducts[productTitle] += quantity;
+          locationMetrics[locationId].topProducts[productTitle] += quantity;
 
           // Track top products globales - usar ID para evitar duplicados
           if (!globalTopProducts[productId]) {
@@ -582,7 +593,7 @@ export const loader = async ({ request }) => {
           }
           globalTopProducts[productId].quantity += quantity;
           globalTopProducts[productId].orders += 1;
-          globalTopProducts[productId].locations.add('Online'); // Temporal
+          globalTopProducts[productId].locations.add(locationName);
 
           // Usar el precio REAL del item
           globalTopProducts[productId].revenue += itemRevenue;
@@ -648,6 +659,9 @@ export const loader = async ({ request }) => {
     console.log(`Loaded ${orders.length} orders and ${products.length} products`);
     
     // DIAGNÓSTICO: Preparar datos de diagnóstico para UI
+    const ordersWithLocation = currentPeriodOrders.filter(o => o.node.physicalLocation?.id).length;
+    const ordersOnline = currentPeriodOrders.filter(o => !o.node.physicalLocation?.id).length;
+
     const diagnosticData = {
       totalOrdersRaw: allOrders.length,
       totalOrdersFiltered: orders.length,
@@ -656,9 +670,12 @@ export const loader = async ({ request }) => {
         name: allOrders[0].node.name,
         status: allOrders[0].node.displayFinancialStatus,
         amount: allOrders[0].node.currentTotalPriceSet?.shopMoney?.amount,
-        cancelled: allOrders[0].node.cancelledAt
+        cancelled: allOrders[0].node.cancelledAt,
+        location: allOrders[0].node.physicalLocation?.name || 'Online'
       } : null,
       currentPeriodOrders: currentPeriodOrders.length,
+      ordersWithLocation: ordersWithLocation,
+      ordersOnline: ordersOnline,
       period: period,
       days: days
     };
@@ -1012,6 +1029,20 @@ export default function DashboardNuevo() {
                 <p style={{ margin: '0 0 5px 0', fontSize: '12px', color: '#6b7280', fontWeight: '500' }}>Productos Cargados</p>
                 <p style={{ margin: 0, fontSize: '24px', fontWeight: '700', color: '#111827' }}>
                   {productsLoaded}
+                </p>
+              </div>
+
+              <div style={{ background: 'white', padding: '12px', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+                <p style={{ margin: '0 0 5px 0', fontSize: '12px', color: '#6b7280', fontWeight: '500' }}>Órdenes con Ubicación</p>
+                <p style={{ margin: 0, fontSize: '24px', fontWeight: '700', color: '#111827' }}>
+                  {diagnosticData.ordersWithLocation || 0}
+                </p>
+              </div>
+
+              <div style={{ background: 'white', padding: '12px', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+                <p style={{ margin: '0 0 5px 0', fontSize: '12px', color: '#6b7280', fontWeight: '500' }}>Órdenes Online</p>
+                <p style={{ margin: 0, fontSize: '24px', fontWeight: '700', color: '#111827' }}>
+                  {diagnosticData.ordersOnline || 0}
                 </p>
               </div>
             </div>
