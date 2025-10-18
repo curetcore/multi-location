@@ -138,37 +138,85 @@ export const loader = async ({ request }) => {
       try {
         const ordersResponse = await admin.graphql(ordersQuery, { variables });
         const ordersData = await ordersResponse.json();
-        
+
+        // DIAGNÓSTICO: Log de respuesta completa
+        console.log('=== ORDERS QUERY DEBUG ===');
+        console.log('Response status:', ordersResponse.status);
+        console.log('Has errors:', !!ordersData.errors);
+        console.log('Has data:', !!ordersData.data);
+        console.log('Has orders:', !!ordersData.data?.orders);
+        console.log('Orders edges count:', ordersData.data?.orders?.edges?.length || 0);
+
         if (ordersData.errors) {
-          console.error('GraphQL errors:', ordersData.errors);
+          console.error('GraphQL errors:', JSON.stringify(ordersData.errors, null, 2));
           hasNextPage = false;
           break;
         }
-        
+
         if (ordersData.data?.orders?.edges) {
-          allOrders = [...allOrders, ...ordersData.data.orders.edges];
+          const newOrders = ordersData.data.orders.edges;
+
+          // DIAGNÓSTICO: Log de primeras órdenes
+          if (allOrders.length === 0 && newOrders.length > 0) {
+            console.log('First order sample:', JSON.stringify(newOrders[0], null, 2));
+            console.log('Order statuses in this batch:',
+              newOrders.map(o => ({
+                name: o.node.name,
+                financialStatus: o.node.displayFinancialStatus,
+                cancelled: o.node.cancelledAt,
+                amount: o.node.currentTotalPriceSet?.shopMoney?.amount
+              }))
+            );
+          }
+
+          allOrders = [...allOrders, ...newOrders];
           hasNextPage = ordersData.data.orders.pageInfo.hasNextPage;
           cursor = ordersData.data.orders.pageInfo.endCursor;
-          
+
           // Log progress
-          console.log(`Loaded ${allOrders.length} orders...`);
-          
+          console.log(`Loaded ${allOrders.length} orders so far...`);
+
           // Stop if we've reached our limit
           if (allOrders.length >= maxOrders) {
             allOrders = allOrders.slice(0, maxOrders);
             break;
           }
         } else {
-          console.warn('No orders data in response');
+          console.warn('No orders data in response - full response:', JSON.stringify(ordersData, null, 2));
           hasNextPage = false;
         }
       } catch (error) {
         console.error('Error loading orders:', error);
+        console.error('Error details:', error.message, error.stack);
         hasNextPage = false;
         break;
       }
     }
     
+    // DIAGNÓSTICO: Análisis de órdenes antes de filtrar
+    console.log('=== ORDER FILTERING DEBUG ===');
+    console.log('Total orders before filtering:', allOrders.length);
+
+    if (allOrders.length > 0) {
+      const statusBreakdown = {};
+      const cancelledCount = allOrders.filter(o => o.node.cancelledAt !== null).length;
+
+      allOrders.forEach(order => {
+        const status = order.node.displayFinancialStatus;
+        statusBreakdown[status] = (statusBreakdown[status] || 0) + 1;
+      });
+
+      console.log('Status breakdown:', statusBreakdown);
+      console.log('Cancelled orders:', cancelledCount);
+      console.log('Sample order data:', {
+        name: allOrders[0].node.name,
+        financialStatus: allOrders[0].node.displayFinancialStatus,
+        cancelled: allOrders[0].node.cancelledAt,
+        amount: allOrders[0].node.currentTotalPriceSet?.shopMoney?.amount,
+        createdAt: allOrders[0].node.createdAt
+      });
+    }
+
     // Filtrar órdenes - aceptar todas excepto canceladas
     const orders = allOrders.filter(order => {
       const isCancelled = order.node.cancelledAt !== null;
