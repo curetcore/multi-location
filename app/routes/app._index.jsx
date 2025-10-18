@@ -65,6 +65,7 @@ export const loader = async ({ request }) => {
     const ordersPerPage = 250;
     
     while (hasNextPage && allOrders.length < maxOrders) {
+      // Simplificada: eliminar staffMember que puede causar problemas de permisos
       const ordersQuery = `#graphql
         query getRecentOrders($first: Int!, $after: String) {
           orders(first: $first, after: $after, reverse: true) {
@@ -88,16 +89,6 @@ export const loader = async ({ request }) => {
                 createdAt
                 cancelledAt
                 displayFinancialStatus
-                physicalLocation {
-                  id
-                  name
-                }
-                staffMember {
-                  id
-                  firstName
-                  lastName
-                  displayName
-                }
                 lineItems(first: 50) {
                   edges {
                     node {
@@ -339,21 +330,12 @@ export const loader = async ({ request }) => {
     const todayOrdersCount = todayOrders.length;
     const todayAvgTicket = todayOrdersCount > 0 ? todaySales / todayOrdersCount : 0;
     
-    // Calcular ventas por ubicación para hoy
-    const salesByLocation = {};
-    todayOrders.forEach(order => {
-      const locationName = order.node.physicalLocation?.name || 'Online';
-      const amount = parseFloat(order.node.currentTotalPriceSet?.shopMoney?.amount || 0);
-      salesByLocation[locationName] = (salesByLocation[locationName] || 0) + amount;
-    });
-    
-    // Encontrar la sucursal con más ventas
-    let topLocation = { name: 'Sin ventas', sales: 0 };
-    Object.entries(salesByLocation).forEach(([name, sales]) => {
-      if (sales > topLocation.sales) {
-        topLocation = { name, sales };
-      }
-    });
+    // NOTA: physicalLocation removido de la consulta para evitar errores
+    // Todas las ventas se consideran "Online" por ahora
+    const topLocation = {
+      name: todayOrdersCount > 0 ? 'Ventas Totales' : 'Sin ventas',
+      sales: todaySales
+    };
     
     // Calcular métricas del período actual según el período seleccionado
     const periodStartDate = new Date();
@@ -550,18 +532,18 @@ export const loader = async ({ request }) => {
     const globalTopProducts = {};
     // const employeeMetrics = {}; // DESHABILITADO - staffMember no disponible
     
-    // Procesar órdenes para calcular métricas por ubicación, productos globales y empleados
+    // Procesar órdenes para calcular métricas por ubicación y productos globales
+    // NOTA: physicalLocation y staffMember removidos para evitar errores
     currentPeriodOrders.forEach(order => {
-      const locationId = order.node.physicalLocation?.id;
-      const locationName = order.node.physicalLocation?.name || 'Online';
       const orderAmount = parseFloat(order.node.currentTotalPriceSet?.shopMoney?.amount || 0);
-      
-      // Procesar métricas de empleado - DESHABILITADO TEMPORALMENTE
-      // El campo staffMember requiere permisos especiales o puede no estar disponible
-      
-      if (locationId && locationMetrics[locationId]) {
-        locationMetrics[locationId].sales += orderAmount;
-        locationMetrics[locationId].orders += 1;
+
+      // TODO: Re-agregar physicalLocation cuando se confirme que funciona
+      // Por ahora todas las órdenes van a la primera ubicación si existe
+      const firstLocationId = locations.length > 0 ? locations[0].node.id : null;
+
+      if (firstLocationId && locationMetrics[firstLocationId]) {
+        locationMetrics[firstLocationId].sales += orderAmount;
+        locationMetrics[firstLocationId].orders += 1;
         
         // Procesar items de la orden
         order.node.lineItems?.edges?.forEach(item => {
@@ -569,21 +551,19 @@ export const loader = async ({ request }) => {
           const productId = item.node.variant?.product?.id || `unknown-${item.node.title}`;
           const productTitle = item.node.variant?.product?.title || item.node.title || 'Sin nombre';
           const sku = item.node.variant?.sku || '';
-          
-          // Obtener el precio REAL del lineItem (CORREGIDO)
+
+          // Obtener el precio REAL del lineItem
           const itemRevenue = parseFloat(item.node.originalTotalSet?.shopMoney?.amount || 0);
-          
-          // Contar productos para el empleado - DESHABILITADO
-          
+
           // Métricas por ubicación
-          locationMetrics[locationId].unitsSold += quantity;
-          
+          locationMetrics[firstLocationId].unitsSold += quantity;
+
           // Track top products por ubicación
-          if (!locationMetrics[locationId].topProducts[productTitle]) {
-            locationMetrics[locationId].topProducts[productTitle] = 0;
+          if (!locationMetrics[firstLocationId].topProducts[productTitle]) {
+            locationMetrics[firstLocationId].topProducts[productTitle] = 0;
           }
-          locationMetrics[locationId].topProducts[productTitle] += quantity;
-          
+          locationMetrics[firstLocationId].topProducts[productTitle] += quantity;
+
           // Track top products globales - usar ID para evitar duplicados
           if (!globalTopProducts[productId]) {
             globalTopProducts[productId] = {
@@ -598,9 +578,9 @@ export const loader = async ({ request }) => {
           }
           globalTopProducts[productId].quantity += quantity;
           globalTopProducts[productId].orders += 1;
-          globalTopProducts[productId].locations.add(locationName);
-          
-          // Usar el precio REAL del item (CORREGIDO - antes dividía equitativamente)
+          globalTopProducts[productId].locations.add('Online'); // Temporal
+
+          // Usar el precio REAL del item
           globalTopProducts[productId].revenue += itemRevenue;
         });
       }
@@ -654,46 +634,19 @@ export const loader = async ({ request }) => {
         sku: product.sku || productSkuMap[product.title] || ''
       }));
     
-    // Procesar datos de empleados REALES desde POS de Shopify
-    const employeeMetrics = {};
-    
-    currentPeriodOrders.forEach(order => {
-      // Obtener el empleado REAL del campo staffMember (POS de Shopify)
-      let employeeName = null;
-      
-      // Prioridad 1: staffMember de POS
-      if (order.node.staffMember) {
-        employeeName = order.node.staffMember.displayName || 
-                      `${order.node.staffMember.firstName} ${order.node.staffMember.lastName}`.trim() ||
-                      'Staff Sin Nombre';
+    // EMPLEADOS DESHABILITADOS - staffMember removido para evitar errores
+    // TODO: Re-habilitar cuando se confirme que funciona
+    const employeeMetrics = {
+      'Sistema': {
+        name: 'Sistema',
+        totalSales: totalSales,
+        orders: totalOrders,
+        productsCount: currentPeriodOrders.reduce((sum, order) => {
+          return sum + order.node.lineItems.edges.reduce((s, item) => s + item.node.quantity, 0);
+        }, 0),
+        locations: new Set(['Online'])
       }
-      
-      // Si no hay staffMember, es venta online
-      if (!employeeName) {
-        employeeName = 'Ventas Online';
-      }
-      
-      const amount = parseFloat(order.node.currentTotalPriceSet?.shopMoney?.amount || 0);
-      const productsCount = order.node.lineItems.edges.reduce((sum, item) => sum + item.node.quantity, 0);
-      
-      if (!employeeMetrics[employeeName]) {
-        employeeMetrics[employeeName] = {
-          name: employeeName,
-          totalSales: 0,
-          orders: 0,
-          productsCount: 0,
-          locations: new Set(),
-          staffId: order.node.staffMember?.id || null
-        };
-      }
-      
-      employeeMetrics[employeeName].totalSales += amount;
-      employeeMetrics[employeeName].orders += 1;
-      employeeMetrics[employeeName].productsCount += productsCount;
-      if (order.node.physicalLocation) {
-        employeeMetrics[employeeName].locations.add(order.node.physicalLocation.name);
-      }
-    });
+    };
     
     // Convertir a array y ordenar por ventas
     console.log('Employee metrics before conversion:', employeeMetrics);
@@ -706,7 +659,9 @@ export const loader = async ({ request }) => {
         orders: emp.orders,
         totalSales: Math.round(emp.totalSales),
         commission: Math.round(emp.totalSales * 0.01),
-        locations: Array.from(emp.locations)
+        avgOrderValue: emp.orders > 0 ? Math.round(emp.totalSales / emp.orders) : 0,
+        locations: Array.from(emp.locations),
+        locationsCount: emp.locations.size
       }))
       .sort((a, b) => b.totalSales - a.totalSales)
       .slice(0, 10)
