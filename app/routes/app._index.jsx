@@ -212,18 +212,19 @@ export const loader = async ({ request }) => {
       });
     }
 
-    // Filtrar órdenes - solo PAID y PARTIALLY_PAID (como lo hace Shopify en su panel)
+    // Filtrar órdenes - incluir estados que Shopify cuenta en ventas
     const orders = allOrders.filter(order => {
       const isCancelled = order.node.cancelledAt !== null;
       const status = order.node.displayFinancialStatus;
 
-      // Shopify analytics solo cuenta órdenes pagadas
-      const isPaid = status === 'PAID' || status === 'PARTIALLY_PAID';
+      // Shopify cuenta: PAID, PARTIALLY_PAID, AUTHORIZED, PENDING
+      // NO cuenta: CANCELLED, REFUNDED, VOIDED, EXPIRED
+      const isCountable = ['PAID', 'PARTIALLY_PAID', 'AUTHORIZED', 'PENDING'].includes(status);
 
-      return !isCancelled && isPaid;
+      return !isCancelled && isCountable;
     });
 
-    console.log(`Total orders loaded: ${allOrders.length}, filtered to: ${orders.length} (PAID/PARTIALLY_PAID only)`);
+    console.log(`Total orders loaded: ${allOrders.length}, filtered to: ${orders.length} (PAID/PARTIALLY_PAID/AUTHORIZED/PENDING)`);
     
     // 4. Obtener inventario total y por ubicación con paginación
     let allProducts = [];
