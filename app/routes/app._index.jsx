@@ -740,7 +740,7 @@ export default function DashboardNuevo() {
   const { shop, locations, metrics, todayMetrics, inventoryByLocation, currentPeriod, lastUpdate, productsList, locationMetrics, top9Products, totalProducts, ordersLoaded, productsLoaded, loadTime, diagnosticData } = useLoaderData();
   const navigate = useNavigate();
   const [selectedPeriod, setSelectedPeriod] = useState(currentPeriod || '30d');
-  const [showDiagnostic, setShowDiagnostic] = useState(ordersLoaded === 0); // Auto-mostrar si no hay órdenes
+  const [showDiagnostic, setShowDiagnostic] = useState(false); // Oculto por defecto
 
   // Calcular sucursales activas
   const activeLocations = locations?.filter(loc => loc.node?.isActive).length || 0;
