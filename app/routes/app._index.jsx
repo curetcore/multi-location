@@ -721,6 +721,28 @@ export const loader = async ({ request }) => {
     console.log(`Data load completed in ${((endTime - startTime) / 1000).toFixed(2)} seconds`);
     console.log(`Loaded ${orders.length} orders and ${products.length} products`);
     
+    // DIAGNÓSTICO: Preparar datos de diagnóstico para UI
+    const diagnosticData = {
+      totalOrdersRaw: allOrders.length,
+      totalOrdersFiltered: orders.length,
+      orderStatuses: {},
+      sampleOrder: allOrders.length > 0 ? {
+        name: allOrders[0].node.name,
+        status: allOrders[0].node.displayFinancialStatus,
+        amount: allOrders[0].node.currentTotalPriceSet?.shopMoney?.amount,
+        cancelled: allOrders[0].node.cancelledAt
+      } : null,
+      currentPeriodOrders: currentPeriodOrders.length,
+      period: period,
+      days: days
+    };
+
+    // Conteo de estados
+    allOrders.forEach(order => {
+      const status = order.node.displayFinancialStatus;
+      diagnosticData.orderStatuses[status] = (diagnosticData.orderStatuses[status] || 0) + 1;
+    });
+
     return {
       shop,
       locations,
@@ -733,6 +755,7 @@ export const loader = async ({ request }) => {
       productsLoaded: products.length,
       loadTime: ((endTime - startTime) / 1000).toFixed(2),
       hasEstimatedInventoryCost, // Flag para mostrar advertencia en UI
+      diagnosticData, // NUEVO: datos de diagnóstico
       metrics: {
         totalSales: Math.round(totalSales),
         totalOrders,
@@ -793,10 +816,11 @@ export const loader = async ({ request }) => {
 };
 
 export default function DashboardNuevo() {
-  const { shop, locations, metrics, todayMetrics, inventoryByLocation, currentPeriod, lastUpdate, productsList, locationMetrics, top9Products, topEmployees, totalProducts, ordersLoaded, productsLoaded, loadTime } = useLoaderData();
+  const { shop, locations, metrics, todayMetrics, inventoryByLocation, currentPeriod, lastUpdate, productsList, locationMetrics, top9Products, topEmployees, totalProducts, ordersLoaded, productsLoaded, loadTime, diagnosticData } = useLoaderData();
   const navigate = useNavigate();
   const [selectedPeriod, setSelectedPeriod] = useState(currentPeriod || '30d');
-  
+  const [showDiagnostic, setShowDiagnostic] = useState(ordersLoaded === 0); // Auto-mostrar si no hay órdenes
+
   // Calcular sucursales activas
   const activeLocations = locations?.filter(loc => loc.node?.isActive).length || 0;
   const totalLocations = locations?.length || 0;
@@ -995,6 +1019,134 @@ export default function DashboardNuevo() {
           </div>
         </div>
       </div>
+
+      {/* PANEL DE DIAGNÓSTICO */}
+      {showDiagnostic && diagnosticData && (
+        <div style={{ maxWidth: '1400px', margin: '20px auto', padding: '0 30px' }}>
+          <div style={{
+            background: ordersLoaded === 0 ? '#fef2f2' : '#f0fdf4',
+            border: `2px solid ${ordersLoaded === 0 ? '#ef4444' : '#22c55e'}`,
+            borderRadius: '16px',
+            padding: '20px',
+            position: 'relative'
+          }}>
+            <button
+              onClick={() => setShowDiagnostic(false)}
+              style={{
+                position: 'absolute',
+                top: '10px',
+                right: '10px',
+                background: 'transparent',
+                border: 'none',
+                fontSize: '20px',
+                cursor: 'pointer',
+                color: '#6b7280',
+                padding: '5px 10px'
+              }}
+            >
+              ✕
+            </button>
+
+            <h3 style={{
+              margin: '0 0 15px 0',
+              color: ordersLoaded === 0 ? '#dc2626' : '#16a34a',
+              fontSize: '18px',
+              fontWeight: '600'
+            }}>
+              {ordersLoaded === 0 ? '⚠️ DIAGNÓSTICO: No se cargaron órdenes' : '✅ Sistema Funcionando'}
+            </h3>
+
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+              gap: '15px',
+              marginBottom: '15px'
+            }}>
+              <div style={{ background: 'white', padding: '12px', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+                <p style={{ margin: '0 0 5px 0', fontSize: '12px', color: '#6b7280', fontWeight: '500' }}>Órdenes Cargadas (RAW)</p>
+                <p style={{ margin: 0, fontSize: '24px', fontWeight: '700', color: '#111827' }}>
+                  {diagnosticData.totalOrdersRaw}
+                </p>
+              </div>
+
+              <div style={{ background: 'white', padding: '12px', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+                <p style={{ margin: '0 0 5px 0', fontSize: '12px', color: '#6b7280', fontWeight: '500' }}>Órdenes Filtradas</p>
+                <p style={{ margin: 0, fontSize: '24px', fontWeight: '700', color: '#111827' }}>
+                  {diagnosticData.totalOrdersFiltered}
+                </p>
+              </div>
+
+              <div style={{ background: 'white', padding: '12px', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+                <p style={{ margin: '0 0 5px 0', fontSize: '12px', color: '#6b7280', fontWeight: '500' }}>Órdenes en Período ({diagnosticData.days} días)</p>
+                <p style={{ margin: 0, fontSize: '24px', fontWeight: '700', color: '#111827' }}>
+                  {diagnosticData.currentPeriodOrders}
+                </p>
+              </div>
+
+              <div style={{ background: 'white', padding: '12px', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+                <p style={{ margin: '0 0 5px 0', fontSize: '12px', color: '#6b7280', fontWeight: '500' }}>Productos Cargados</p>
+                <p style={{ margin: 0, fontSize: '24px', fontWeight: '700', color: '#111827' }}>
+                  {productsLoaded}
+                </p>
+              </div>
+            </div>
+
+            {diagnosticData.orderStatuses && Object.keys(diagnosticData.orderStatuses).length > 0 && (
+              <div style={{ background: 'white', padding: '15px', borderRadius: '8px', border: '1px solid #e5e7eb', marginBottom: '15px' }}>
+                <p style={{ margin: '0 0 10px 0', fontSize: '13px', color: '#6b7280', fontWeight: '600' }}>Estados Financieros de Órdenes:</p>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                  {Object.entries(diagnosticData.orderStatuses).map(([status, count]) => (
+                    <div key={status} style={{
+                      background: '#f3f4f6',
+                      padding: '6px 12px',
+                      borderRadius: '6px',
+                      fontSize: '13px',
+                      color: '#374151',
+                      fontWeight: '500'
+                    }}>
+                      {status}: <strong>{count}</strong>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {diagnosticData.sampleOrder && (
+              <div style={{ background: 'white', padding: '15px', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+                <p style={{ margin: '0 0 10px 0', fontSize: '13px', color: '#6b7280', fontWeight: '600' }}>Muestra de Orden:</p>
+                <pre style={{
+                  background: '#f9fafb',
+                  padding: '10px',
+                  borderRadius: '6px',
+                  fontSize: '12px',
+                  overflow: 'auto',
+                  margin: 0
+                }}>
+                  {JSON.stringify(diagnosticData.sampleOrder, null, 2)}
+                </pre>
+              </div>
+            )}
+
+            {ordersLoaded === 0 && (
+              <div style={{
+                background: '#fef3c7',
+                padding: '12px',
+                borderRadius: '8px',
+                marginTop: '15px',
+                border: '1px solid #fbbf24'
+              }}>
+                <p style={{ margin: 0, fontSize: '14px', color: '#92400e', fontWeight: '500' }}>
+                  💡 <strong>Posibles causas:</strong><br/>
+                  • La tienda no tiene órdenes<br/>
+                  • Las órdenes están todas canceladas<br/>
+                  • Problema de permisos de API (verifica access_scopes en shopify.app.toml)<br/>
+                  • La fecha de las órdenes está fuera del rango seleccionado
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* CONTENIDO PRINCIPAL */}
       <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '30px' }}>
