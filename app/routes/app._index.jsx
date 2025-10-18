@@ -208,14 +208,18 @@ export const loader = async ({ request }) => {
       });
     }
 
-    // Filtrar órdenes - aceptar todas excepto canceladas
+    // Filtrar órdenes - solo PAID y PARTIALLY_PAID (como lo hace Shopify en su panel)
     const orders = allOrders.filter(order => {
       const isCancelled = order.node.cancelledAt !== null;
-      // Solo rechazar órdenes canceladas
-      return !isCancelled;
+      const status = order.node.displayFinancialStatus;
+
+      // Shopify analytics solo cuenta órdenes pagadas
+      const isPaid = status === 'PAID' || status === 'PARTIALLY_PAID';
+
+      return !isCancelled && isPaid;
     });
 
-    console.log(`Total orders loaded: ${allOrders.length}, filtered to: ${orders.length} (excluding cancelled)`);
+    console.log(`Total orders loaded: ${allOrders.length}, filtered to: ${orders.length} (PAID/PARTIALLY_PAID only)`);
     
     // 4. Obtener inventario total y por ubicación con paginación
     let allProducts = [];
@@ -740,7 +744,7 @@ export default function DashboardNuevo() {
   const { shop, locations, metrics, todayMetrics, inventoryByLocation, currentPeriod, lastUpdate, productsList, locationMetrics, top9Products, totalProducts, ordersLoaded, productsLoaded, loadTime, diagnosticData } = useLoaderData();
   const navigate = useNavigate();
   const [selectedPeriod, setSelectedPeriod] = useState(currentPeriod || '30d');
-  const [showDiagnostic, setShowDiagnostic] = useState(false); // Oculto por defecto
+  const [showDiagnostic, setShowDiagnostic] = useState(true); // Mostrar para debug
 
   // Calcular sucursales activas
   const activeLocations = locations?.filter(loc => loc.node?.isActive).length || 0;
