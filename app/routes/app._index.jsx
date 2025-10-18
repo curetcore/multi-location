@@ -169,13 +169,14 @@ export const loader = async ({ request }) => {
       }
     }
     
-    // Filtrar solo órdenes pagadas después de cargarlas
+    // Filtrar órdenes - aceptar todas excepto canceladas
     const orders = allOrders.filter(order => {
-      const status = order.node.displayFinancialStatus;
-      return status === 'PAID' || status === 'PARTIALLY_PAID' || status === 'PENDING';
+      const isCancelled = order.node.cancelledAt !== null;
+      // Solo rechazar órdenes canceladas
+      return !isCancelled;
     });
-    
-    console.log(`Total orders loaded: ${allOrders.length}, filtered to: ${orders.length}`);
+
+    console.log(`Total orders loaded: ${allOrders.length}, filtered to: ${orders.length} (excluding cancelled)`);
     
     // 4. Obtener inventario total y por ubicación con paginación
     let allProducts = [];
